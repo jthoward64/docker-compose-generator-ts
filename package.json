@@ -1,5 +1,5 @@
 {
-  "name": "@jthoward64/docker-compose-generator-ts",
+  "name": "@tajetaje/docker-compose-generator-ts",
   "version": "0.0.1",
   "exports": {
     ".": {
