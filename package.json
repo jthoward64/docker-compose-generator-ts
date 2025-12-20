@@ -1,0 +1,27 @@
+{
+  "name": "@jthoward64/docker-compose-generator-ts",
+  "version": "0.0.1",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "build": "tsc"
+  },
+  "type": "module",
+  "author": "Joshua Tag Howard",
+  "license": "ISC",
+  "dependencies": {
+    "yaml": "^2.8.2",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "@vitest/coverage-v8": "^4.0.16",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
+  }
+}

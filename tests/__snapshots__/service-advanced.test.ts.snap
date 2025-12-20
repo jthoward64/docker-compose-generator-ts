@@ -1,0 +1,527 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Service DSL advanced coverage > builds a fully configured service and matches snapshot 1`] = `
+{
+  "configs": {
+    "app_cfg": {
+      "content": "{"feature":true}",
+      "name": "app_cfg",
+    },
+    "nginx_conf": {
+      "file": "./nginx.conf",
+      "name": "nginx_conf",
+    },
+  },
+  "name": "full-service-stack",
+  "networks": {
+    "front": {
+      "driver": "bridge",
+      "ipam": {
+        "config": [
+          {
+            "gateway": "10.5.0.1",
+            "subnet": "10.5.0.0/16",
+          },
+        ],
+        "driver": "custom",
+      },
+      "name": "front",
+    },
+  },
+  "secrets": {
+    "api_key": {
+      "file": "./secrets/api_key",
+      "name": "api_key",
+    },
+    "token": {
+      "environment": "TOKEN_VAR",
+      "name": "token",
+    },
+  },
+  "services": {
+    "web": {
+      "annotations": {
+        "com.example.note": "hello",
+      },
+      "attach": false,
+      "blkio_config": {
+        "weight": 10,
+      },
+      "cap_add": [
+        "NET_ADMIN",
+      ],
+      "cap_drop": [
+        "MKNOD",
+      ],
+      "cgroup": "host",
+      "cgroup_parent": "/sys/fs/cgroup",
+      "command": [
+        "nginx",
+        "-g",
+        "daemon off;",
+      ],
+      "configs": [
+        "nginx_conf",
+        "app_cfg",
+      ],
+      "container_name": "web-1",
+      "cpu_count": 2,
+      "cpu_percent": 50,
+      "cpu_period": 100000,
+      "cpu_quota": 50000,
+      "cpu_rt_period": 200000,
+      "cpu_rt_runtime": 150000,
+      "cpu_shares": 1024,
+      "cpus": "1.5",
+      "cpuset": "0,1",
+      "credential_spec": {
+        "file": "spec.json",
+      },
+      "deploy": {
+        "labels": {
+          "deploy-label": "yes",
+        },
+        "replicas": 2,
+        "resources": {
+          "limits": {
+            "cpus": "0.50",
+            "memory": "256M",
+          },
+          "reservations": {
+            "cpus": "0.25",
+            "memory": "128M",
+          },
+        },
+        "restart_policy": {
+          "condition": "on-failure",
+        },
+      },
+      "develop": {
+        "watch": [
+          {
+            "action": "sync",
+            "exec": {
+              "command": "npm run build",
+              "user": "1000",
+            },
+            "ignore": [
+              "node_modules",
+            ],
+            "include": [
+              "src/**",
+            ],
+            "initial_sync": true,
+            "path": "./src",
+            "target": "/app",
+          },
+        ],
+      },
+      "device_cgroup_rules": [
+        "c 10:200 rwm",
+      ],
+      "devices": [
+        "/dev/kvm:/dev/kvm",
+      ],
+      "domainname": "example.local",
+      "entrypoint": "/docker-entrypoint.sh",
+      "env_file": [
+        "./env/common",
+        "./env/prod",
+      ],
+      "environment": {
+        "APP_MODE": "prod",
+        "FEATURE_X": "true",
+      },
+      "expose": [
+        8081,
+      ],
+      "extends": {
+        "file": "./base.yml",
+        "service": "base",
+      },
+      "external_links": [
+        "legacy:alias",
+      ],
+      "gpus": [
+        {
+          "capabilities": [
+            "gpu",
+          ],
+          "device_ids": [
+            "0",
+          ],
+        },
+      ],
+      "group_add": [
+        "app",
+        1001,
+      ],
+      "healthcheck": {
+        "interval": "30s",
+        "retries": 2,
+        "test": [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost",
+        ],
+        "timeout": "5s",
+      },
+      "hostname": "webhost",
+      "image": "nginx:alpine",
+      "init": true,
+      "ipc": "shareable",
+      "isolation": "process",
+      "label_file": [
+        "./labels.txt",
+      ],
+      "labels": {
+        "traefik.enable": "true",
+      },
+      "links": [
+        "db",
+      ],
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-file": 3,
+          "max-size": "10m",
+        },
+      },
+      "mac_address": "02:42:ac:11:00:0b",
+      "mem_limit": "512m",
+      "mem_reservation": "256m",
+      "mem_swappiness": 10,
+      "memswap_limit": "1g",
+      "network_mode": "bridge",
+      "networks": {
+        "front": {
+          "aliases": [
+            "web",
+          ],
+          "driver_opts": {
+            "com.docker.opt": "1",
+          },
+          "gw_priority": 2,
+          "interface_name": "eth0",
+          "ipv4_address": "10.5.0.10",
+          "link_local_ips": [
+            "169.254.2.2",
+          ],
+          "mac_address": "02:42:ac:11:00:0c",
+          "priority": 1,
+        },
+      },
+      "oom_kill_disable": true,
+      "oom_score_adj": -500,
+      "pid": "host",
+      "pids_limit": 100,
+      "platform": "linux/amd64",
+      "ports": [
+        {
+          "published": 8080,
+          "target": 80,
+        },
+        {
+          "protocol": "tcp",
+          "published": 9443,
+          "target": 443,
+        },
+      ],
+      "post_start": [
+        {
+          "command": "echo post",
+        },
+      ],
+      "pre_stop": [
+        {
+          "command": [
+            "sleep",
+            "5",
+          ],
+        },
+      ],
+      "privileged": true,
+      "profiles": [
+        "prod",
+        "blue",
+      ],
+      "provider": {
+        "options": {
+          "region": "us-east-1",
+        },
+        "type": "aws",
+      },
+      "pull_policy": "always",
+      "pull_refresh_after": "24h",
+      "read_only": false,
+      "restart": "always",
+      "runtime": "runc",
+      "scale": 3,
+      "secrets": [
+        "api_key",
+        "token",
+      ],
+      "security_opt": [
+        "no-new-privileges:true",
+      ],
+      "shm_size": "1g",
+      "stdin_open": true,
+      "stop_grace_period": "30s",
+      "stop_signal": "SIGTERM",
+      "storage_opt": {
+        "size": "20G",
+      },
+      "sysctls": {
+        "net.core.somaxconn": 1024,
+      },
+      "tmpfs": [
+        "/tmp",
+      ],
+      "tty": true,
+      "ulimits": {
+        "nofile": {
+          "hard": 2048,
+          "soft": 1024,
+        },
+      },
+      "use_api_socket": true,
+      "user": "1000:1000",
+      "userns_mode": "host",
+      "uts": "host",
+      "volumes": [
+        "/host/config:/etc/nginx/conf.d:ro",
+        {
+          "source": "shared-data",
+          "target": "/data",
+          "type": "volume",
+        },
+      ],
+      "volumes_from": [
+        "other-service",
+      ],
+      "working_dir": "/app",
+    },
+  },
+}
+`;
+
+exports[`Service DSL advanced coverage > builds a fully configured service and matches snapshot 2`] = `
+"name: full-service-stack
+services:
+  web:
+    image: nginx:alpine
+    command:
+      - nginx
+      - -g
+      - daemon off;
+    entrypoint: /docker-entrypoint.sh
+    working_dir: /app
+    environment:
+      APP_MODE: prod
+      FEATURE_X: "true"
+    env_file:
+      - ./env/common
+      - ./env/prod
+    networks:
+      front:
+        aliases:
+          - web
+        ipv4_address: 10.5.0.10
+        interface_name: eth0
+        link_local_ips:
+          - 169.254.2.2
+        mac_address: 02:42:ac:11:00:0c
+        driver_opts:
+          com.docker.opt: "1"
+        priority: 1
+        gw_priority: 2
+    network_mode: bridge
+    ports:
+      - target: 80
+        published: 8080
+      - target: 443
+        published: 9443
+        protocol: tcp
+    expose:
+      - 8081
+    hostname: webhost
+    domainname: example.local
+    mac_address: 02:42:ac:11:00:0b
+    links:
+      - db
+    external_links:
+      - legacy:alias
+    volumes:
+      - /host/config:/etc/nginx/conf.d:ro
+      - type: volume
+        source: shared-data
+        target: /data
+    volumes_from:
+      - other-service
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost
+      interval: 30s
+      timeout: 5s
+      retries: 2
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: 3
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+      labels:
+        deploy-label: yes
+    develop:
+      watch:
+        - path: ./src
+          action: sync
+          target: /app
+          ignore:
+            - node_modules
+          include:
+            - src/**
+          initial_sync: true
+          exec:
+            command: npm run build
+            user: "1000"
+    labels:
+      traefik.enable: "true"
+    annotations:
+      com.example.note: hello
+    label_file:
+      - ./labels.txt
+    secrets:
+      - api_key
+      - token
+    configs:
+      - nginx_conf
+      - app_cfg
+    ulimits:
+      nofile:
+        soft: 1024
+        hard: 2048
+    sysctls:
+      net.core.somaxconn: 1024
+    blkio_config:
+      weight: 10
+    cpu_count: 2
+    cpu_percent: 50
+    cpu_shares: 1024
+    cpu_quota: 50000
+    cpu_period: 100000
+    cpu_rt_period: 200000
+    cpu_rt_runtime: 150000
+    cpus: "1.5"
+    cpuset: 0,1
+    mem_limit: 512m
+    mem_reservation: 256m
+    mem_swappiness: 10
+    memswap_limit: 1g
+    pids_limit: 100
+    shm_size: 1g
+    oom_kill_disable: true
+    oom_score_adj: -500
+    devices:
+      - /dev/kvm:/dev/kvm
+    device_cgroup_rules:
+      - c 10:200 rwm
+    cap_add:
+      - NET_ADMIN
+    cap_drop:
+      - MKNOD
+    gpus:
+      - device_ids:
+          - "0"
+        capabilities:
+          - gpu
+    credential_spec:
+      file: spec.json
+    privileged: true
+    read_only: false
+    security_opt:
+      - no-new-privileges:true
+    user: 1000:1000
+    group_add:
+      - app
+      - 1001
+    userns_mode: host
+    container_name: web-1
+    init: true
+    ipc: shareable
+    isolation: process
+    pid: host
+    platform: linux/amd64
+    restart: always
+    runtime: runc
+    scale: 3
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
+    storage_opt:
+      size: 20G
+    tty: true
+    stdin_open: true
+    uts: host
+    cgroup: host
+    cgroup_parent: /sys/fs/cgroup
+    extends:
+      service: base
+      file: ./base.yml
+    provider:
+      type: aws
+      options:
+        region: us-east-1
+    profiles:
+      - prod
+      - blue
+    pull_policy: always
+    pull_refresh_after: 24h
+    attach: false
+    use_api_socket: true
+    post_start:
+      - command: echo post
+    pre_stop:
+      - command:
+          - sleep
+          - "5"
+networks:
+  front:
+    name: front
+    driver: bridge
+    ipam:
+      driver: custom
+      config:
+        - subnet: 10.5.0.0/16
+          gateway: 10.5.0.1
+secrets:
+  api_key:
+    name: api_key
+    file: ./secrets/api_key
+  token:
+    name: token
+    environment: TOKEN_VAR
+configs:
+  nginx_conf:
+    name: nginx_conf
+    file: ./nginx.conf
+  app_cfg:
+    name: app_cfg
+    content: '{"feature":true}'
+"
+`;

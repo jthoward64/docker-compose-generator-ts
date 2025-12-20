@@ -1,0 +1,59 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`StackBuilder and ComposeStack > supports ipam and external resources and matches snapshot 1`] = `
+{
+  "configs": {
+    "ext-config": {
+      "external": true,
+      "name": "ext-config",
+    },
+  },
+  "name": "external-stack",
+  "networks": {
+    "custom-net": {
+      "attachable": true,
+      "driver": "bridge",
+      "enable_ipv4": true,
+      "enable_ipv6": false,
+      "ipam": {
+        "config": [
+          {
+            "aux_addresses": {
+              "host1": "10.10.0.2",
+            },
+            "gateway": "10.10.0.1",
+            "ip_range": "10.10.0.0/24",
+            "subnet": "10.10.0.0/16",
+          },
+        ],
+        "driver": "my-ipam",
+        "options": {
+          "foo": "bar",
+        },
+      },
+      "name": "custom-net",
+    },
+    "existing": {
+      "external": {
+        "name": "real-net",
+      },
+    },
+  },
+  "secrets": {
+    "ext-secret": {
+      "external": true,
+      "name": "ext-secret",
+    },
+  },
+  "services": {
+    "only": {
+      "image": "busybox",
+    },
+  },
+  "volumes": {
+    "ext-vol": {
+      "external": true,
+    },
+  },
+}
+`;
