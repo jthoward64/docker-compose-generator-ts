@@ -1,6 +1,6 @@
 {
   "name": "@tajetaje/docker-compose-generator-ts",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -10,7 +10,8 @@
   "scripts": {
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build": "tsc"
+    "build": "tsc",
+    "prepare": "npm run build"
   },
   "type": "module",
   "author": "Joshua Tag Howard",
