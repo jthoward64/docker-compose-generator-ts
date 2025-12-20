@@ -1,0 +1,12 @@
+/coverage/
+/.vscode/
+/.github/
+/.gitignore
+/tests/
+/lib/
+/examples/
+/tsconfig.json
+/vitest.config.ts
+/.eslintrc.json
+/.prettierrc
+/.nvmrc
