@@ -170,6 +170,30 @@ export interface GroupsDsl {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Callback helpers (function types)
+// ─────────────────────────────────────────────────────────────────────────────
+export type ListFn = (dsl: ListDsl) => void;
+export type KeyValueFn = (dsl: KeyValueDsl) => void;
+export type KeyValueNumericFn = (dsl: KeyValueNumericDsl) => void;
+export type PortsFn = (dsl: PortsDsl) => void;
+export type VolumesFn = (dsl: VolumesDsl) => void;
+export type SecretsFn = (dsl: SecretsDsl) => void;
+export type ConfigsFn = (dsl: ConfigsDsl) => void;
+export type ExposeFn = (dsl: ExposeDsl) => void;
+export type UlimitsFn = (dsl: UlimitsDsl) => void;
+export type DependsFn = (dsl: DependsDsl) => void;
+export type NetworkAttachmentFn = (dsl: NetworkAttachmentDsl) => void;
+export type NetworksFn = (dsl: NetworksDsl) => void;
+export type GpusFn = (dsl: GpusDsl) => void;
+export type HooksFn = (dsl: HooksDsl) => void;
+export type GroupsFn = (dsl: GroupsDsl) => void;
+
+export type StackNetworksFn = (dsl: StackNetworksDsl) => void;
+export type StackVolumesFn = (dsl: StackVolumesDsl) => void;
+export type StackSecretsFn = (dsl: StackSecretsDsl) => void;
+export type StackConfigsFn = (dsl: StackConfigsDsl) => void;
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Stack-level Builders
 // ─────────────────────────────────────────────────────────────────────────────
 

@@ -1,9 +1,10 @@
 {
   "name": "@tajetaje/docker-compose-generator-ts",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "exports": {
     ".": {
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     }
   },
   "scripts": {

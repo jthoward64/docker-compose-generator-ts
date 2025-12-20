@@ -23,3 +23,6 @@ export interface StackDsl {
   /** Define a service */
   service: (builder: (dsl: ServiceDsl) => void) => ServiceHandle;
 }
+
+export type StackFn = (dsl: StackDsl) => void;
+export type StackServiceFn = (dsl: ServiceDsl) => void;

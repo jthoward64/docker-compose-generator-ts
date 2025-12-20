@@ -244,4 +244,6 @@ export interface ServiceDsl {
   useApiSocket: (value: boolean) => void;
 }
 
+export type ServiceFn = (dsl: ServiceDsl) => void;
+
 export {};
