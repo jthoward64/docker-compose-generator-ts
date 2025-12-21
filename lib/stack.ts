@@ -1,5 +1,5 @@
 import { StackBuilder } from './builder/stack/stack-builder.ts';
-import type { StackDsl, StackFn } from './dsl/stack.ts';
+import type { StackFn } from './dsl/stack.ts';
 import type { ComposeStack } from './compose-stack.ts';
 
 export const stack = <R>(builder: StackFn<R>): [ComposeStack, R] => {

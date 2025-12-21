@@ -44,7 +44,7 @@ const [compose] = stack((s) => {
       v.quick('mongo-data', '/data/db');
     });
 
-    svc.ports((p) => {
+    svc.volumes({ type: 'volume', source: 'db-data', target: '/var/lib/postgresql/data' });
       p.quick(27017, 27017);
     });
 

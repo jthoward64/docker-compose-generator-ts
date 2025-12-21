@@ -81,14 +81,10 @@ describe('Service DSL advanced coverage', () => {
           p.add({ target: 443, published: 9443, protocol: 'tcp' });
         });
 
-        svc.expose((e) => {
-          e.add(8081);
-        });
+        svc.expose(8081);
 
-        svc.volumes((v) => {
-          v.quick('/host/config', '/etc/nginx/conf.d', 'ro');
-          v.add({ type: 'volume', source: 'shared-data', target: '/data' });
-        });
+        svc.volumes('/host/config', '/etc/nginx/conf.d', 'ro');
+        svc.volumes({ type: 'volume', source: 'shared-data', target: '/data' });
         svc.volumesFrom((l) => {
           l.add('other-service');
         });
@@ -96,15 +92,11 @@ describe('Service DSL advanced coverage', () => {
           l.add('/tmp');
         });
 
-        svc.secrets((sec) => {
-          sec.add(secretA!);
-          sec.add(secretB!);
-        });
+        svc.secret(secretA!);
+        svc.secret(secretB!);
 
-        svc.configs((cfg) => {
-          cfg.add(configA!);
-          cfg.add(configB!);
-        });
+        svc.config(configA!);
+        svc.config(configB!);
 
         svc.healthcheck({
           test: ['CMD', 'curl', '-f', 'http://localhost'],
@@ -112,7 +104,6 @@ describe('Service DSL advanced coverage', () => {
           timeout: '5s',
           retries: 2,
         });
-
         svc.logging({
           driver: 'json-file',
           options: { 'max-size': '10m', 'max-file': 3 },

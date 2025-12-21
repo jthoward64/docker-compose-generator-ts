@@ -106,7 +106,7 @@ const [compose] = stack((s) => {
     svc.depends((d) => {
       d.on(api, 'service_healthy');
     });
-  });
+      svc.volumes({ type: 'bind', source: './api', target: '/app' });
 });
 
 // Output the compose file

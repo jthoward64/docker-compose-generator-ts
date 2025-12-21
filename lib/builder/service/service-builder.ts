@@ -6,9 +6,14 @@ import type {
   ComposeCredentialSpec,
   ComposeDeploy,
   ComposeDevelopment,
+  ComposeVolumeBindOptions,
+  ComposeVolumeConfig,
   ComposeGpuDevice,
   ComposeProvider,
   ComposeService,
+  ComposeServiceConfig,
+  ComposeServiceSecret,
+  ComposeServiceVolume,
   ComposeUlimits,
   HealthcheckInput,
   LoggingInput,
@@ -18,9 +23,7 @@ import type {
   ServiceVolumeInput,
 } from '../../types.ts';
 import {
-  createConfigsBuilder,
   createDependsBuilder,
-  createExposeBuilder,
   createGpusBuilder,
   createGroupsBuilder,
   createHooksBuilder,
@@ -28,12 +31,8 @@ import {
   createKeyValueNumericBuilder,
   createListBuilder,
   createPortsBuilder,
-  createSecretsBuilder,
   createUlimitsBuilder,
-  createVolumesBuilder,
-  type ConfigsDsl,
   type DependsDsl,
-  type ExposeDsl,
   type GpusDsl,
   type GroupsDsl,
   type HooksDsl,
@@ -43,9 +42,7 @@ import {
   type NetworkAttachmentDsl,
   type NetworksDsl,
   type PortsDsl,
-  type SecretsDsl,
   type UlimitsDsl,
-  type VolumesDsl,
 } from '../../dsl/builders.ts';
 import { CommandProperty } from './properties/command.ts';
 import { DependsProperty } from './properties/depends.ts';
@@ -71,6 +68,10 @@ export class ServiceBuilder implements ServiceHandle {
   private readonly portsProperty = new PortsProperty(this.state);
   private readonly dependsProperty = new DependsProperty(this.state);
   private readonly networksProperty = new ServiceNetworksBuilder(this.state);
+  private readonly volumesList: ComposeServiceVolume[] = [];
+  private readonly exposeList: Array<string | number> = [];
+  private readonly secretsList: ComposeServiceSecret[] = [];
+  private readonly configsList: ComposeServiceConfig[] = [];
 
   get name(): string {
     return this.state.name;
@@ -262,13 +263,10 @@ export class ServiceBuilder implements ServiceHandle {
     return result;
   }
 
-  expose<R>(fn: (dsl: ExposeDsl) => R): R {
-    const { dsl, values } = createExposeBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setExpose(values);
-    }
-    return result;
+  expose(port: number | string | Array<number | string>): void {
+    const entries = Array.isArray(port) ? port : [port];
+    this.exposeList.push(...entries);
+    this.state.setExpose(this.exposeList);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -322,13 +320,39 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   // Volumes
   // ─────────────────────────────────────────────────────────────────────────
-  volumes<R>(fn: (dsl: VolumesDsl) => R): R {
-    const { dsl, values } = createVolumesBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setVolumes(values as ServiceVolumeInput[]);
+  private normalizeVolumeInput(input: ServiceVolumeInput): ComposeServiceVolume {
+    const config: ComposeVolumeConfig = { type: input.type };
+
+    if (input.source) config.source = input.source;
+    if (input.target) config.target = input.target;
+    if (input.consistency) config.consistency = input.consistency;
+    if (input.readOnly !== undefined) config.read_only = input.readOnly;
+
+    if (input.bind) {
+      const { createHostPath, ...rest } = input.bind;
+      const bind: ComposeVolumeBindOptions = { ...rest };
+      if (createHostPath !== undefined) bind.create_host_path = createHostPath;
+      config.bind = bind;
     }
-    return result;
+
+    if (input.volume) config.volume = { ...input.volume };
+    if (input.tmpfs) config.tmpfs = { ...input.tmpfs };
+    if (input.image) config.image = { ...input.image };
+
+    return config;
+  }
+
+  volumes(volume: ServiceVolumeInput): void;
+  volumes(source: string, target: string, mode?: string): void;
+  volumes(volumeOrSource: ServiceVolumeInput | string, target?: string, mode?: string): void {
+    if (typeof volumeOrSource === 'string') {
+      if (!target) throw new Error('Target is required when specifying a source string for volumes');
+      const spec = mode ? `${volumeOrSource}:${target}:${mode}` : `${volumeOrSource}:${target}`;
+      this.volumesList.push(spec);
+    } else {
+      this.volumesList.push(this.normalizeVolumeInput(volumeOrSource));
+    }
+    this.state.setVolumes(this.volumesList);
   }
 
   volumesFrom<R>(fn: (dsl: ListDsl) => R): R {
@@ -352,22 +376,14 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   // Secrets & Configs
   // ─────────────────────────────────────────────────────────────────────────
-  secrets<R>(fn: (dsl: SecretsDsl) => R): R {
-    const { dsl, values } = createSecretsBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setSecrets(values.map((s) => s.name));
-    }
-    return result;
+  secret(secret: { name: string }): void {
+    this.secretsList.push(secret.name);
+    this.state.setSecrets(this.secretsList);
   }
 
-  configs<R>(fn: (dsl: ConfigsDsl) => R): R {
-    const { dsl, values } = createConfigsBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setConfigs(values.map((c) => c.name));
-    }
-    return result;
+  config(config: { name: string }): void {
+    this.configsList.push(config.name);
+    this.state.setConfigs(this.configsList);
   }
 
   // ─────────────────────────────────────────────────────────────────────────

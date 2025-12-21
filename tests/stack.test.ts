@@ -47,9 +47,7 @@ describe('StackBuilder and ComposeStack', () => {
         svc.environment((env) => {
           env.add('POSTGRES_PASSWORD', 'pw');
         });
-        svc.volumes((v) => {
-          v.quick(dataVolume.name, '/var/lib/postgresql/data');
-        });
+        svc.volumes(dataVolume.name, '/var/lib/postgresql/data');
         svc.networks((n) => {
           n.add(appNetwork);
         });

@@ -17,10 +17,8 @@ describe('Service DSL helpers', () => {
           p.add({ target: 443, published: 4443, protocol: 'tcp' });
         });
 
-        svc.volumes((v) => {
-          v.quick('/host/path', '/container', 'ro');
-          v.add({ type: 'volume', source: 'named', target: '/data', read_only: true });
-        });
+        svc.volumes('/host/path', '/container', 'ro');
+        svc.volumes({ type: 'volume', source: 'named', target: '/data', readOnly: true });
 
         svc.ulimits((u) => {
           u.quick('nofile', 1024);
@@ -71,11 +69,11 @@ describe('Service DSL helpers', () => {
       const [bHandle] = s.service((svc) => {
         svc.name('b');
         svc.image('alpine');
-        svc.expose((e) => e.add(7000));
+        svc.expose(7000);
         svc.dns((d) => d.add('8.8.8.8'));
         svc.dnsOpt((d) => d.add('rotate'));
         svc.dnsSearch((d) => d.add('example.local'));
-        svc.extraHosts((h) => h.add('db', '10.0.0.5'));
+          svc.extraHosts((h) => h.add('db', '10.0.0.5')); // No-op confirm (safe)
         svc.links((l) => l.add('legacy')); 
         svc.externalLinks((l) => l.add('ext:alias'));
         svc.depends((d) => {

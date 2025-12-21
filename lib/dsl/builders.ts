@@ -6,7 +6,6 @@ import type {
   SecretHandle,
   ServiceHandle,
   ServiceHook,
-  ServiceVolume,
 } from '../types.ts';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -16,26 +15,6 @@ import type {
 /**
  * DSL for adding string items to a list
  */
-export interface ListDsl {
-  add: (value: string) => void;
-}
-
-/**
- * DSL for adding key-value pairs (string -> string)
- */
-export interface KeyValueDsl {
-  add: (key: string, value: string) => void;
-}
-
-/**
- * DSL for adding key-value pairs (string -> string | number)
- */
-export interface KeyValueNumericDsl {
-  add: (key: string, value: string | number) => void;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Service-specific Builders
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -64,36 +43,8 @@ export interface PortsDsl {
  *   v.quick('./data', '/data', 'ro');
  * });
  */
-export interface VolumesDsl {
-  /** Add a volume with full configuration */
-  add: (volume: ServiceVolume) => void;
-  /** Quick add: source:target or source:target:mode */
-  quick: (source: string, target: string, mode?: string) => void;
-}
-
-/**
- * DSL for adding secrets to a service
- */
-export interface SecretsDsl {
-  /** Add a secret handle */
-  add: (secret: SecretHandle) => void;
-}
-
-/**
- * DSL for adding configs to a service
- */
-export interface ConfigsDsl {
-  /** Add a config handle */
-  add: (config: ConfigHandle) => void;
-}
-
-/**
- * DSL for adding expose ports
- */
-export interface ExposeDsl {
-  /** Add an exposed port */
-  add: (port: number) => void;
-}
+// Volumes now use overloaded function signatures on ServiceDsl
+// Secrets/configs/expose now use single-call helpers on ServiceDsl
 
 /**
  * DSL for adding ulimits
@@ -171,10 +122,6 @@ export type ListFn<R = void> = (dsl: ListDsl) => R;
 export type KeyValueFn<R = void> = (dsl: KeyValueDsl) => R;
 export type KeyValueNumericFn<R = void> = (dsl: KeyValueNumericDsl) => R;
 export type PortsFn<R = void> = (dsl: PortsDsl) => R;
-export type VolumesFn<R = void> = (dsl: VolumesDsl) => R;
-export type SecretsFn<R = void> = (dsl: SecretsDsl) => R;
-export type ConfigsFn<R = void> = (dsl: ConfigsDsl) => R;
-export type ExposeFn<R = void> = (dsl: ExposeDsl) => R;
 export type UlimitsFn<R = void> = (dsl: UlimitsDsl) => R;
 export type DependsFn<R = void> = (dsl: DependsDsl) => R;
 export type NetworkAttachmentFn<R = void> = (dsl: NetworkAttachmentDsl) => R;
@@ -297,49 +244,7 @@ export const createPortsBuilder = (): { dsl: PortsDsl; values: PortInput[] } => 
   };
 };
 
-export const createVolumesBuilder = (): { dsl: VolumesDsl; values: Array<string | ServiceVolume> } => {
-  const values: Array<string | ServiceVolume> = [];
-  return {
-    dsl: {
-      add: (volume: ServiceVolume) => values.push(volume),
-      quick: (source: string, target: string, mode?: string) => {
-        const spec = mode ? `${source}:${target}:${mode}` : `${source}:${target}`;
-        values.push(spec);
-      },
-    },
-    values,
-  };
-};
-
-export const createSecretsBuilder = (): { dsl: SecretsDsl; values: SecretHandle[] } => {
-  const values: SecretHandle[] = [];
-  return {
-    dsl: {
-      add: (secret: SecretHandle) => values.push(secret),
-    },
-    values,
-  };
-};
-
-export const createConfigsBuilder = (): { dsl: ConfigsDsl; values: ConfigHandle[] } => {
-  const values: ConfigHandle[] = [];
-  return {
-    dsl: {
-      add: (config: ConfigHandle) => values.push(config),
-    },
-    values,
-  };
-};
-
-export const createExposeBuilder = (): { dsl: ExposeDsl; values: number[] } => {
-  const values: number[] = [];
-  return {
-    dsl: {
-      add: (port: number) => values.push(port),
-    },
-    values,
-  };
-};
+// Removed in favor of direct helpers on ServiceDsl
 
 export const createUlimitsBuilder = (): { dsl: UlimitsDsl; values: Record<string, number | { soft: number; hard: number }> } => {
   const values: Record<string, number | { soft: number; hard: number }> = {};

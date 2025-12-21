@@ -39,9 +39,7 @@ const [compose] = stack((s) => {
       env.add('MYSQL_PASSWORD', 'wordpress');
     });
 
-    svc.volumes((v) => {
-      v.quick(dbData.name, '/var/lib/mysql');
-    });
+    svc.volumes(dbData.name, '/var/lib/mysql');
 
     svc.networks((n) => {
       n.add(wpNetwork);
@@ -72,9 +70,7 @@ const [compose] = stack((s) => {
       env.add('WORDPRESS_DB_NAME', 'wordpress');
     });
 
-    svc.volumes((v) => {
-      v.quick(wpContent.name, '/var/www/html/wp-content');
-    });
+    svc.volumes(wpContent.name, '/var/www/html/wp-content');
 
     svc.networks((n) => {
       n.add(wpNetwork);

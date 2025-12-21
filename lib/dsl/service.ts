@@ -14,10 +14,6 @@ import type {
   KeyValueFn,
   KeyValueNumericFn,
   PortsFn,
-  VolumesFn,
-  SecretsFn,
-  ConfigsFn,
-  ExposeFn,
   UlimitsFn,
   DependsFn,
   NetworksFn,
@@ -25,6 +21,7 @@ import type {
   HooksFn,
   GroupsFn,
 } from "./builders.ts";
+import type { ConfigHandle, SecretHandle, ServiceVolumeInput } from "../types.ts";
 
 export interface ServiceDsl {
   // ─────────────────────────────────────────────────────────────────────────
@@ -71,7 +68,7 @@ export interface ServiceDsl {
   // Ports & Expose
   // ─────────────────────────────────────────────────────────────────────────
   ports: <R>(fn: PortsFn<R>) => R;
-  expose: <R>(fn: ExposeFn<R>) => R;
+  expose: (port: number | string | Array<number | string>) => void;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Environment & Config
@@ -85,15 +82,18 @@ export interface ServiceDsl {
   // ─────────────────────────────────────────────────────────────────────────
   // Volumes & Storage
   // ─────────────────────────────────────────────────────────────────────────
-  volumes: <R>(fn: VolumesFn<R>) => R;
+  volumes: {
+    (volume: ServiceVolumeInput): void;
+    (source: string, target: string, mode?: string): void;
+  };
   volumesFrom: <R>(fn: ListFn<R>) => R;
   tmpfs: <R>(fn: ListFn<R>) => R;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Secrets & Configs
   // ─────────────────────────────────────────────────────────────────────────
-  secrets: <R>(fn: SecretsFn<R>) => R;
-  configs: <R>(fn: ConfigsFn<R>) => R;
+  secret: (secret: SecretHandle) => void;
+  config: (config: ConfigHandle) => void;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Health & Lifecycle

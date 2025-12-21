@@ -69,10 +69,7 @@ const [compose] = stack((s) => {
       env.add('POSTGRES_PASSWORD_FILE', '/run/secrets/db_password');
     });
 
-    // Mount the secret
-    svc.secrets((sec) => {
-      sec.add(dbPassword);
-    });
+    svc.secret(dbPassword);
 
     svc.networks((n) => {
       n.add(appNetwork);
@@ -97,10 +94,7 @@ const [compose] = stack((s) => {
       p.quick(443, 443);
     });
 
-    // Mount the config
-    svc.configs((cfg) => {
-      cfg.add(nginxConfig);
-    });
+      svc.config(nginxConfig);
 
     svc.networks((n) => {
       n.add(appNetwork);
@@ -121,15 +115,11 @@ const [compose] = stack((s) => {
     });
 
     // Mount multiple secrets
-    svc.secrets((sec) => {
-      sec.add(dbPassword);
-      sec.add(apiKey);
-    });
+    svc.secret(dbPassword);
+    svc.secret(apiKey);
 
     // Mount config
-    svc.configs((cfg) => {
-      cfg.add(appConfig);
-    });
+    svc.config(appConfig);
 
     svc.ports((p) => {
       p.quick(3000, 3000);
