@@ -39,8 +39,8 @@ const [compose] = stack((s) => {
 
     svc.volumes(dbData.name, "/var/lib/mysql");
 
-    svc.networks((n) => {
-      n.add(wpNetwork);
+    svc.network((n) => {
+      n.handle(wpNetwork);
     });
 
     svc.healthcheck({
@@ -66,8 +66,8 @@ const [compose] = stack((s) => {
 
     svc.volumes(wpContent.name, "/var/www/html/wp-content");
 
-    svc.networks((n) => {
-      n.add(wpNetwork);
+    svc.network((n) => {
+      n.handle(wpNetwork);
     });
 
     svc.depends(db, "service_healthy");

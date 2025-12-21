@@ -48,8 +48,8 @@ const [compose] = stack((s) => {
 
     svc.volumes("/var/run/docker.sock", "/var/run/docker.sock", "ro");
 
-    svc.networks((n) => {
-      n.add(traefikNet);
+    svc.network((n) => {
+      n.handle(traefikNet);
     });
 
     svc.labels("traefik.enable", "true");
@@ -74,8 +74,8 @@ const [compose] = stack((s) => {
     svc.ports({ target: 5672, published: 5672 }); // AMQP
     svc.ports({ target: 15672, published: 15672 }); // Management UI
 
-    svc.networks((n) => {
-      n.add(internalNet);
+    svc.network((n) => {
+      n.handle(internalNet);
     });
 
     svc.healthcheck({
@@ -97,9 +97,9 @@ const [compose] = stack((s) => {
     svc.environment("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672");
     svc.environment("SERVICE_NAME", "user-service");
 
-    svc.networks((n) => {
-      n.add(traefikNet);
-      n.add(internalNet);
+    svc.network((n) => {
+      n.handle(traefikNet);
+      n.handle(internalNet);
     });
 
     svc.depends(rabbitmq, "service_healthy");
@@ -131,9 +131,9 @@ const [compose] = stack((s) => {
     svc.environment("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672");
     svc.environment("SERVICE_NAME", "order-service");
 
-    svc.networks((n) => {
-      n.add(traefikNet);
-      n.add(internalNet);
+    svc.network((n) => {
+      n.handle(traefikNet);
+      n.handle(internalNet);
     });
 
     svc.depends(rabbitmq, "service_healthy");
@@ -165,8 +165,8 @@ const [compose] = stack((s) => {
     svc.environment("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672");
     svc.environment("SERVICE_NAME", "notification-service");
 
-    svc.networks((n) => {
-      n.add(internalNet);
+    svc.network((n) => {
+      n.handle(internalNet);
     });
 
     svc.depends(rabbitmq, "service_healthy");

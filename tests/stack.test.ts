@@ -51,8 +51,8 @@ describe("StackBuilder and ComposeStack", () => {
         svc.image("postgres:16");
         svc.environment("POSTGRES_PASSWORD", "pw");
         svc.volumes(dataVolume.name, "/var/lib/postgresql/data");
-        svc.networks((n) => {
-          n.add(appNetwork);
+        svc.network((n) => {
+          n.handle(appNetwork);
         });
         svc.healthcheck({
           test: ["CMD-SHELL", "pg_isready -U postgres"],
@@ -69,16 +69,15 @@ describe("StackBuilder and ComposeStack", () => {
         svc.image("node:20");
         svc.ports({ target: 3000, published: 8080 });
         svc.ports({ target: 9229, published: 49229, protocol: "tcp" });
-        svc.networks((n) => {
-          n.add(appNetwork, (cfg) => {
-            cfg.alias("api");
-            cfg.ipv4Address("172.30.0.10");
-            cfg.macAddress("02:42:ac:11:00:0a");
-            cfg.driverOpt("com.docker.network", "custom");
-            cfg.linkLocalIp("169.254.1.1");
-            cfg.priority(10);
-            cfg.gwPriority(5);
-          });
+        svc.network((n) => {
+          n.handle(appNetwork);
+          n.alias("api");
+          n.ipv4Address("172.30.0.10");
+          n.macAddress("02:42:ac:11:00:0a");
+          n.driverOpt("com.docker.network", "custom");
+          n.linkLocalIp("169.254.1.1");
+          n.priority(10);
+          n.gwPriority(5);
         });
         svc.depends(db, "service_healthy");
         svc.environment("NODE_ENV", "production");

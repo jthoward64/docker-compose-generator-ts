@@ -181,22 +181,72 @@ describe("Service DSL advanced coverage", () => {
         svc.postStart({ command: "echo post" });
         svc.preStop({ command: ["sleep", "5"] });
 
-        svc.networks((n) => {
-          n.add(netHandle!, (a) => {
-            a.alias("web");
-            a.ipv4Address("10.5.0.10");
-            a.interfaceName("eth0");
-            a.linkLocalIp("169.254.2.2");
-            a.priority(1);
-            a.gwPriority(2);
-            a.macAddress("02:42:ac:11:00:0c");
-            a.driverOpt("com.docker.opt", "1");
-          });
+        svc.network((n) => {
+          n.handle(netHandle!);
+          n.alias("web");
+          n.ipv4Address("10.5.0.10");
+          n.interfaceName("eth0");
+          n.linkLocalIp("169.254.2.2");
+          n.priority(1);
+          n.gwPriority(2);
+          n.macAddress("02:42:ac:11:00:0c");
+          n.driverOpt("com.docker.opt", "1");
         });
       });
     });
 
     expect(compose.toObject()).toMatchSnapshot();
     expect(compose.toYAML()).toMatchSnapshot();
+  });
+
+  it("supports long-form secret and config mounts", () => {
+    const [compose] = stack((s) => {
+      s.name("long-form-mounts");
+
+      const [secretHandle] = s.secret((sec) => {
+        sec.name("api_secret");
+        sec.file("./secrets/api_secret.txt");
+      });
+
+      const [configHandle] = s.config((cfg) => {
+        cfg.name("app_config");
+        cfg.file("./configs/app.json");
+      });
+
+      s.service((svc) => {
+        svc.name("app");
+        svc.image("node:20");
+
+        svc.secret(secretHandle!, {
+          target: "/run/secrets/api_secret", // custom target
+          uid: "1001",
+          gid: "1001",
+          mode: 0o440,
+        });
+
+        svc.config(configHandle!, {
+          uid: "1001",
+        });
+      });
+    });
+
+    const app = compose.toObject().services?.app as any;
+    expect(app?.secrets).toEqual([
+      {
+        source: "api_secret",
+        target: "/run/secrets/api_secret",
+        uid: "1001",
+        gid: "1001",
+        mode: 0o440,
+      },
+    ]);
+
+    expect(app?.configs).toEqual([
+      {
+        source: "app_config",
+        target: "app_config",
+        uid: "1001",
+      },
+    ]);
   });
 });

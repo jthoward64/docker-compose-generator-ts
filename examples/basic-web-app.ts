@@ -35,8 +35,8 @@ const [compose] = stack((s) => {
 
     svc.volumes("postgres-data", "/var/lib/postgresql/data");
 
-    svc.networks((n) => {
-      n.add(appNetwork);
+    svc.network((n) => {
+      n.handle(appNetwork);
     });
 
     svc.healthcheck({
@@ -64,8 +64,8 @@ const [compose] = stack((s) => {
 
     svc.ports({ target: 3000, published: 3000 });
 
-    svc.networks((n) => {
-      n.add(appNetwork);
+    svc.network((n) => {
+      n.handle(appNetwork);
     });
 
     svc.depends(db, "service_healthy");
@@ -90,8 +90,8 @@ const [compose] = stack((s) => {
     svc.volumes("./nginx/nginx.conf", "/etc/nginx/nginx.conf", "ro");
     svc.volumes("./nginx/ssl", "/etc/nginx/ssl", "ro");
 
-    svc.networks((n) => {
-      n.add(appNetwork);
+    svc.network((n) => {
+      n.handle(appNetwork);
     });
 
     svc.depends(api, "service_healthy");

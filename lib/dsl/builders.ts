@@ -67,29 +67,29 @@ export interface DependsDsl {
 }
 
 /**
- * DSL for configuring a service's network attachment
+ * DSL for configuring a service network attachment
  */
-export interface NetworkAttachmentDsl {
+export interface NetworkDsl {
+  /** Select which network to configure */
+  handle: (network: NetworkHandle) => void;
+  /** Add an alias for the selected network */
   alias: (alias: string) => void;
+  /** Set IPv4 address */
   ipv4Address: (address: string) => void;
+  /** Set IPv6 address */
   ipv6Address: (address: string) => void;
+  /** Set interface name */
   interfaceName: (name: string) => void;
+  /** Add a link-local IP */
   linkLocalIp: (ip: string) => void;
+  /** Set MAC address */
   macAddress: (address: string) => void;
+  /** Add driver options */
   driverOpt: (key: string, value: string | number) => void;
+  /** Set priority */
   priority: (value: number) => void;
+  /** Set gateway priority */
   gwPriority: (value: number) => void;
-}
-
-/**
- * DSL for adding networks to a service
- */
-export interface NetworksDsl {
-  /** Add a network with optional attachment configuration */
-  add: <R = void>(
-    network: NetworkHandle,
-    attachment?: (dsl: NetworkAttachmentDsl) => R
-  ) => R | undefined;
 }
 
 /**
@@ -146,8 +146,7 @@ export interface BuildDsl {
 export type PortsFn<R = void> = (dsl: PortsDsl) => R;
 export type UlimitsFn<R = void> = (dsl: UlimitsDsl) => R;
 export type DependsFn<R = void> = (dsl: DependsDsl) => R;
-export type NetworkAttachmentFn<R = void> = (dsl: NetworkAttachmentDsl) => R;
-export type NetworksFn<R = void> = (dsl: NetworksDsl) => R;
+export type NetworkFn<R = void> = (dsl: NetworkDsl) => R;
 export type GpusFn<R = void> = (dsl: GpusDsl) => R;
 export type HooksFn<R = void> = (dsl: HooksDsl) => R;
 export type BuildFn<R = void> = (dsl: BuildDsl) => R;

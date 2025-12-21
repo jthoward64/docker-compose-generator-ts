@@ -13,12 +13,28 @@ import type {
   ComposeRestartPolicyValue,
 } from "../types.ts";
 
-import type { BuildFn, NetworksFn, GpusFn } from "./builders.ts";
+import type { BuildFn, NetworkFn, GpusFn } from "./builders.ts";
 import type {
   ConfigHandle,
   SecretHandle,
   ServiceVolumeInput,
 } from "../types.ts";
+
+type SecretMountOptions = {
+  source?: string;
+  target?: string;
+  uid?: string;
+  gid?: string;
+  mode?: number | string;
+};
+
+type ConfigMountOptions = {
+  source?: string;
+  target?: string;
+  uid?: string;
+  gid?: string;
+  mode?: number | string;
+};
 
 export interface ServiceDsl {
   // ─────────────────────────────────────────────────────────────────────────
@@ -53,7 +69,7 @@ export interface ServiceDsl {
       | "service_healthy"
       | "service_completed_successfully"
   ) => void;
-  networks: <R>(fn: NetworksFn<R>) => R;
+  network: <R>(fn: NetworkFn<R>) => R;
   links: (value: string) => void;
   externalLinks: (value: string) => void;
 
@@ -102,8 +118,8 @@ export interface ServiceDsl {
   // ─────────────────────────────────────────────────────────────────────────
   // Secrets & Configs
   // ─────────────────────────────────────────────────────────────────────────
-  secret: (secret: SecretHandle) => void;
-  config: (config: ConfigHandle) => void;
+  secret: (secret: SecretHandle, options?: SecretMountOptions) => void;
+  config: (config: ConfigHandle, options?: ConfigMountOptions) => void;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Health & Lifecycle

@@ -69,8 +69,8 @@ const [compose] = stack((s) => {
 
     svc.secret(dbPassword);
 
-    svc.networks((n) => {
-      n.add(appNetwork);
+    svc.network((n) => {
+      n.handle(appNetwork);
     });
 
     svc.healthcheck({
@@ -92,8 +92,8 @@ const [compose] = stack((s) => {
 
     svc.config(nginxConfig);
 
-    svc.networks((n) => {
-      n.add(appNetwork);
+    svc.network((n) => {
+      n.handle(appNetwork);
     });
   });
 
@@ -119,8 +119,8 @@ const [compose] = stack((s) => {
 
     svc.ports({ target: 3000, published: 3000 });
 
-    svc.networks((n) => {
-      n.add(appNetwork);
+    svc.network((n) => {
+      n.handle(appNetwork);
     });
 
     svc.depends(db, "service_healthy");

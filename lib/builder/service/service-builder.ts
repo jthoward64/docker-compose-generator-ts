@@ -5,8 +5,8 @@ import {
   type BuildDsl,
   type BuildFn,
   type GpusDsl,
-  type NetworkAttachmentDsl,
-  type NetworksDsl,
+  type NetworkDsl,
+  type NetworkFn,
 } from "../../dsl/builders.ts";
 import type {
   ServiceHook,
@@ -283,68 +283,80 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   // Networks
   // ─────────────────────────────────────────────────────────────────────────
-  networks<R>(fn: (dsl: NetworksDsl) => R): R {
-    const dsl: NetworksDsl = {
-      add: <RAttachment = void>(
-        network: NetworkHandle,
-        attachmentFn?: (dsl: NetworkAttachmentDsl) => RAttachment
-      ) => {
-        if (!attachmentFn) {
-          this.networksProperty.add(network);
-          return undefined;
-        }
+  network<R>(fn: NetworkFn<R>): R {
+    let currentNetwork: NetworkHandle | null = null;
+    let currentAttachment: ServiceNetworkAttachment | null = null;
 
-        const attachment: ServiceNetworkAttachment = {};
-        const aliases: string[] = [];
-        const linkLocalIps: string[] = [];
-        const driverOpts: Record<string, string | number> = {};
+    const flush = () => {
+      if (!currentNetwork) return;
+      const attachmentToSave =
+        currentAttachment && Object.keys(currentAttachment).length > 0
+          ? currentAttachment
+          : undefined;
+      this.networksProperty.add(currentNetwork, attachmentToSave);
+      currentNetwork = null;
+      currentAttachment = null;
+    };
 
-        const attachmentDsl: NetworkAttachmentDsl = {
-          alias: (alias) => {
-            aliases.push(alias);
-          },
-          ipv4Address: (address) => {
-            attachment.ipv4Address = address;
-          },
-          ipv6Address: (address) => {
-            attachment.ipv6Address = address;
-          },
-          interfaceName: (name) => {
-            attachment.interfaceName = name;
-          },
-          linkLocalIp: (ip) => {
-            linkLocalIps.push(ip);
-          },
-          macAddress: (address) => {
-            attachment.macAddress = address;
-          },
-          driverOpt: (key, value) => {
-            driverOpts[key] = value;
-          },
-          priority: (value) => {
-            attachment.priority = value;
-          },
-          gwPriority: (value) => {
-            attachment.gwPriority = value;
-          },
-        };
-        const attachmentResult = attachmentFn(attachmentDsl);
+    const ensureAttachment = (): ServiceNetworkAttachment => {
+      if (!currentNetwork) {
+        throw new Error("Call handle(network) before configuring it");
+      }
+      if (!currentAttachment) {
+        currentAttachment = {};
+      }
+      return currentAttachment;
+    };
 
-        if (aliases.length > 0) {
-          attachment.aliases = aliases;
-        }
-        if (linkLocalIps.length > 0) {
-          attachment.linkLocalIps = linkLocalIps;
-        }
-        if (Object.keys(driverOpts).length > 0) {
-          attachment.driverOpts = driverOpts;
-        }
-
-        this.networksProperty.add(network, attachment);
-        return attachmentResult;
+    const dsl: NetworkDsl = {
+      handle: (network) => {
+        flush();
+        currentNetwork = network;
+      },
+      alias: (alias) => {
+        const attachment = ensureAttachment();
+        if (!attachment.aliases) attachment.aliases = [];
+        attachment.aliases.push(alias);
+      },
+      ipv4Address: (address) => {
+        const attachment = ensureAttachment();
+        attachment.ipv4Address = address;
+      },
+      ipv6Address: (address) => {
+        const attachment = ensureAttachment();
+        attachment.ipv6Address = address;
+      },
+      interfaceName: (name) => {
+        const attachment = ensureAttachment();
+        attachment.interfaceName = name;
+      },
+      linkLocalIp: (ip) => {
+        const attachment = ensureAttachment();
+        if (!attachment.linkLocalIps) attachment.linkLocalIps = [];
+        attachment.linkLocalIps.push(ip);
+      },
+      macAddress: (address) => {
+        const attachment = ensureAttachment();
+        attachment.macAddress = address;
+      },
+      driverOpt: (key, value) => {
+        const attachment = ensureAttachment();
+        if (!attachment.driverOpts) attachment.driverOpts = {};
+        attachment.driverOpts[key] = value;
+      },
+      priority: (value) => {
+        const attachment = ensureAttachment();
+        attachment.priority = value;
+      },
+      gwPriority: (value) => {
+        const attachment = ensureAttachment();
+        attachment.gwPriority = value;
       },
     };
-    return fn(dsl);
+
+    const result = fn(dsl);
+    flush();
+    return result;
   }
 
   links(value: string): void {
@@ -508,13 +520,61 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   // Secrets & Configs
   // ─────────────────────────────────────────────────────────────────────────
-  secret(secret: { name: string }): void {
-    this.secretsList.push(secret.name);
+  secret(
+    secret: { name: string },
+    options?: {
+      source?: string;
+      target?: string;
+      uid?: string;
+      gid?: string;
+      mode?: number | string;
+    }
+  ): void {
+    if (!options) {
+      this.secretsList.push(secret.name);
+      this.state.setSecrets(this.secretsList);
+      return;
+    }
+
+    const source = options.source ?? secret.name;
+    const target = options.target ?? source;
+    const entry: ComposeServiceSecret = {
+      source,
+      target,
+      uid: options.uid,
+      gid: options.gid,
+      mode: options.mode,
+    };
+    this.secretsList.push(entry);
     this.state.setSecrets(this.secretsList);
   }
 
-  config(config: { name: string }): void {
-    this.configsList.push(config.name);
+  config(
+    config: { name: string },
+    options?: {
+      source?: string;
+      target?: string;
+      uid?: string;
+      gid?: string;
+      mode?: number | string;
+    }
+  ): void {
+    if (!options) {
+      this.configsList.push(config.name);
+      this.state.setConfigs(this.configsList);
+      return;
+    }
+
+    const source = options.source ?? config.name;
+    const target = options.target ?? source;
+    const entry: ComposeServiceConfig = {
+      source,
+      target,
+      uid: options.uid,
+      gid: options.gid,
+      mode: options.mode,
+    };
+    this.configsList.push(entry);
     this.state.setConfigs(this.configsList);
   }
 

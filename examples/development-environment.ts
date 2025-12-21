@@ -42,8 +42,8 @@ const [compose] = stack((s) => {
 
     svc.ports({ target: 27017, published: 27017 });
 
-    svc.networks((n) => {
-      n.add(backendNet);
+    svc.network((n) => {
+      n.handle(backendNet);
     });
   });
 
@@ -58,8 +58,8 @@ const [compose] = stack((s) => {
 
     svc.ports({ target: 6379, published: 6379 });
 
-    svc.networks((n) => {
-      n.add(backendNet);
+    svc.network((n) => {
+      n.handle(backendNet);
     });
   });
 
@@ -72,8 +72,8 @@ const [compose] = stack((s) => {
     svc.ports({ target: 1025, published: 1025 }); // SMTP
     svc.ports({ target: 8025, published: 8025 }); // Web UI
 
-    svc.networks((n) => {
-      n.add(backendNet);
+    svc.network((n) => {
+      n.handle(backendNet);
     });
   });
 
@@ -99,9 +99,9 @@ const [compose] = stack((s) => {
     svc.volumes(".", "/app");
     svc.volumes({ type: "volume", target: "/app/node_modules" }); // Preserve node_modules
 
-    svc.networks((n) => {
-      n.add(backendNet);
-      n.add(frontendNet);
+    svc.network((n) => {
+      n.handle(backendNet);
+      n.handle(frontendNet);
     });
 
     svc.depends(mongo);

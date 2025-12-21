@@ -39,8 +39,8 @@ const [compose] = stack((s) => {
 
     svc.volumes("minio-data", "/data");
 
-    svc.networks((n) => {
-      n.add(mlNetwork);
+    svc.network((n) => {
+      n.handle(mlNetwork);
     });
 
     svc.healthcheck({
@@ -77,8 +77,8 @@ const [compose] = stack((s) => {
 
     svc.volumes("mlflow-data", "/mlflow");
 
-    svc.networks((n) => {
-      n.add(mlNetwork);
+    svc.network((n) => {
+      n.handle(mlNetwork);
     });
 
     svc.depends(minio, "service_healthy");
@@ -95,8 +95,8 @@ const [compose] = stack((s) => {
 
     svc.volumes("./logs", "/logs", "ro");
 
-    svc.networks((n) => {
-      n.add(mlNetwork);
+    svc.network((n) => {
+      n.handle(mlNetwork);
     });
   });
 
@@ -125,8 +125,8 @@ const [compose] = stack((s) => {
     svc.volumes("./src", "/app/src");
     svc.volumes("./logs", "/app/logs");
 
-    svc.networks((n) => {
-      n.add(mlNetwork);
+    svc.network((n) => {
+      n.handle(mlNetwork);
     });
 
     svc.depends(mlflow);
