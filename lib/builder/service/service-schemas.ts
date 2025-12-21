@@ -413,7 +413,7 @@ const providerSchema = z
 // ─────────────────────────────────────────────────────────────────────────────
 const gpuDeviceSchema = z
   .object({
-    capabilities: z.array(z.string()).optional(),
+    capabilities: z.array(z.string()),
     count: stringOrNumber.optional(),
     device_ids: z.array(z.string()).optional(),
     driver: z.string().optional(),
@@ -523,7 +523,12 @@ export const composeServiceSchema = z
     pre_stop: z.array(serviceHookSchema).optional(),
     privileged: booleanOrString.optional(),
     profiles: z.array(z.string()).optional(),
-    pull_policy: z.string().optional(),
+    pull_policy: z
+      .union([
+        z.enum(['always', 'never', 'build', 'if_not_present', 'missing', 'refresh', 'daily', 'weekly']),
+        z.string().regex(/^every_([0-9]+[wdhms])+$/),
+      ])
+      .optional(),
     pull_refresh_after: z.string().optional(),
     read_only: booleanOrString.optional(),
     restart: z.string().optional(),
@@ -534,7 +539,7 @@ export const composeServiceSchema = z
     stdin_open: booleanOrString.optional(),
     stop_grace_period: z.string().optional(),
     stop_signal: z.string().optional(),
-    storage_opt: z.record(z.string(), z.string()).optional(),
+    storage_opt: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
     tmpfs: stringOrList.optional(),
     tty: booleanOrString.optional(),
     user: z.string().optional(),

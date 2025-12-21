@@ -9,6 +9,7 @@ import type {
   ComposeVolumeBindOptions,
   ComposeVolumeConfig,
   ComposeGpuDevice,
+  ComposePullPolicy,
   ComposeProvider,
   ComposeService,
   ComposeServiceConfig,
@@ -688,7 +689,7 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   // Pull & Profiles
   // ─────────────────────────────────────────────────────────────────────────
-  pullPolicy(value: 'always' | 'never' | 'missing' | 'build'): void {
+  pullPolicy(value: ComposePullPolicy): void {
     this.state.setPullPolicy(value);
   }
 

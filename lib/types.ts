@@ -462,7 +462,7 @@ export interface ComposeProvider {
 // GPUs
 // ─────────────────────────────────────────────────────────────────────────────
 export interface ComposeGpuDevice {
-  capabilities?: string[];
+  capabilities: string[];
   count?: number | string;
   device_ids?: string[];
   driver?: string;
@@ -470,6 +470,17 @@ export interface ComposeGpuDevice {
 }
 
 export type ComposeGpus = 'all' | ComposeGpuDevice[];
+
+export type ComposePullPolicy =
+  | 'always'
+  | 'never'
+  | 'build'
+  | 'if_not_present'
+  | 'missing'
+  | 'refresh'
+  | 'daily'
+  | 'weekly'
+  | `every_${string}`;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Env file
@@ -555,7 +566,7 @@ export interface ComposeService {
   pre_stop?: ComposeServiceHook[];
   privileged?: boolean | string;
   profiles?: string[];
-  pull_policy?: string;
+  pull_policy?: ComposePullPolicy;
   pull_refresh_after?: string;
   read_only?: boolean | string;
   restart?: string;
@@ -566,7 +577,7 @@ export interface ComposeService {
   stdin_open?: boolean | string;
   stop_grace_period?: string;
   stop_signal?: string;
-  storage_opt?: Record<string, string>;
+  storage_opt?: Record<string, string | number>;
   tmpfs?: string | string[];
   tty?: boolean | string;
   user?: string;

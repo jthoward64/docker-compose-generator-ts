@@ -13,6 +13,7 @@ import type {
   ComposeHealthcheck,
   ComposeLogging,
   ComposePort,
+  ComposePullPolicy,
   ComposeProvider,
   ComposeService,
   ComposeServiceConfig,
@@ -144,7 +145,7 @@ export class ServiceState {
   private scaleValue?: number | string;
   private stopGracePeriodValue?: string;
   private stopSignalValue?: string;
-  private storageOptValue?: Record<string, string>;
+  private storageOptValue?: Record<string, string | number>;
   private ttyValue?: boolean | string;
   private stdinOpenValue?: boolean | string;
   private utsValue?: string;
@@ -159,7 +160,7 @@ export class ServiceState {
 
   // Profiles & policies
   private profilesValue?: string[];
-  private pullPolicyValue?: string;
+  private pullPolicyValue?: ComposePullPolicy;
   private pullRefreshAfterValue?: string;
   private attachValue?: boolean | string;
   private useApiSocketValue?: boolean;
@@ -527,7 +528,7 @@ export class ServiceState {
     this.stopSignalValue = value;
   }
 
-  setStorageOpt(value: Record<string, string>): void {
+  setStorageOpt(value: Record<string, string | number>): void {
     this.storageOptValue = { ...value };
   }
 
@@ -566,7 +567,7 @@ export class ServiceState {
     this.profilesValue = [...value];
   }
 
-  setPullPolicy(value: string): void {
+  setPullPolicy(value: ComposePullPolicy): void {
     this.pullPolicyValue = value;
   }
 
