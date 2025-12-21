@@ -4,39 +4,37 @@ import { stack } from '../lib/stack.js';
 
 describe('Service DSL advanced coverage', () => {
   it('builds a fully configured service and matches snapshot', () => {
-    let netHandle: { name: string } | undefined;
-    let secretA: { name: string } | undefined;
-    let secretB: { name: string } | undefined;
-    let configA: { name: string } | undefined;
-    let configB: { name: string } | undefined;
-
     const [compose] = stack((s) => {
       s.name('full-service-stack');
 
-      s.networks((n) => {
-        [netHandle] = n.add({
-          name: 'front',
-          driver: 'bridge',
-          ipam: {
-            driver: 'custom',
-            config: [{ subnet: '10.5.0.0/16', gateway: '10.5.0.1' }],
-          },
-        });
+      const [netHandle] = s.network((n) => {
+        n.name('front');
+        n.driver('bridge');
+        n.ipamDriver('custom');
+        n.ipamConfig({ subnet: '10.5.0.0/16', gateway: '10.5.0.1' });
       });
 
-      s.secrets((sec) => {
-        [secretA] = sec.file('api_key', './secrets/api_key');
-        [secretB] = sec.environment('token', 'TOKEN_VAR');
+      const [secretA] = s.secret((sec) => {
+        sec.name('api_key');
+        sec.file('./secrets/api_key');
       });
 
-      s.configs((cfg) => {
-        [configA] = cfg.file('nginx_conf', './nginx.conf');
-        [configB] = cfg.content('app_cfg', '{"feature":true}');
+      const [secretB] = s.secret((sec) => {
+        sec.name('token');
+        sec.environment('TOKEN_VAR');
+      });
+
+      const [configA] = s.config((cfg) => {
+        cfg.name('nginx_conf');
+        cfg.file('./nginx.conf');
+      });
+
+      const [configB] = s.config((cfg) => {
+        cfg.name('app_cfg');
+        cfg.content('{"feature":true}');
       });
 
       s.service((svc) => {
-        if (!netHandle || !secretA || !secretB || !configA || !configB) throw new Error('handles missing');
-
         svc.name('web');
         svc.image('nginx:alpine');
         svc.containerName('web-1');

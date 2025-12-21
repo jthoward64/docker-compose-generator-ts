@@ -1,17 +1,12 @@
 import type {
   ConfigHandle,
-  ConfigInput,
   GpuConfig,
   NetworkHandle,
-  NetworkInput,
   PortInput,
   SecretHandle,
-  SecretInput,
   ServiceHandle,
   ServiceHook,
   ServiceVolume,
-  VolumeHandle,
-  VolumeInput,
 } from '../types.ts';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -188,68 +183,10 @@ export type GpusFn<R = void> = (dsl: GpusDsl) => R;
 export type HooksFn<R = void> = (dsl: HooksDsl) => R;
 export type GroupsFn<R = void> = (dsl: GroupsDsl) => R;
 
-export type StackNetworksFn<R = void> = (dsl: StackNetworksDsl) => R;
-export type StackVolumesFn<R = void> = (dsl: StackVolumesDsl) => R;
-export type StackSecretsFn<R = void> = (dsl: StackSecretsDsl) => R;
-export type StackConfigsFn<R = void> = (dsl: StackConfigsDsl) => R;
 export type NetworkResourceFn<R = void> = (dsl: NetworkResourceDsl) => R;
 export type VolumeResourceFn<R = void> = (dsl: VolumeResourceDsl) => R;
 export type SecretResourceFn<R = void> = (dsl: SecretResourceDsl) => R;
 export type ConfigResourceFn<R = void> = (dsl: ConfigResourceDsl) => R;
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Stack-level Builders
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * DSL for defining stack networks
- */
-export interface StackNetworksDsl {
-  /** Add a network definition */
-  add: (input: NetworkInput) => [NetworkHandle];
-  /** Reference an external network */
-  external: (name: string, externalName?: string) => [NetworkHandle];
-}
-
-/**
- * DSL for defining stack volumes
- */
-export interface StackVolumesDsl {
-  /** Add a volume definition */
-  add: (input: VolumeInput) => [VolumeHandle];
-  /** Reference an external volume */
-  external: (name: string) => [VolumeHandle];
-}
-
-/**
- * DSL for defining stack secrets
- */
-export interface StackSecretsDsl {
-  /** Add a secret with full configuration */
-  add: (input: SecretInput) => [SecretHandle];
-  /** Add a secret from a file */
-  file: (name: string, filePath: string) => [SecretHandle];
-  /** Add a secret from an environment variable */
-  environment: (name: string, envVar: string) => [SecretHandle];
-  /** Reference an external secret */
-  external: (name: string) => [SecretHandle];
-}
-
-/**
- * DSL for defining stack configs
- */
-export interface StackConfigsDsl {
-  /** Add a config with full configuration */
-  add: (input: ConfigInput) => [ConfigHandle];
-  /** Add a config from a file */
-  file: (name: string, filePath: string) => [ConfigHandle];
-  /** Add a config with inline content */
-  content: (name: string, content: string) => [ConfigHandle];
-  /** Add a config from an environment variable */
-  environment: (name: string, envVar: string) => [ConfigHandle];
-  /** Reference an external config */
-  external: (name: string) => [ConfigHandle];
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Single-resource Stack builders (ergonomic variants)

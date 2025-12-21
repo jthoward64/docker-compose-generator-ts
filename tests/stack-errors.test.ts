@@ -19,27 +19,37 @@ describe('StackBuilder error conditions', () => {
   it('throws on duplicate volumes, secrets, configs, and services', () => {
     expect(() =>
       stack((s) => {
-        s.volumes((v) => {
-          v.add({ name: 'data' });
-          v.add({ name: 'data' });
+        s.volume((v) => {
+          v.name('data');
+        });
+        s.volume((v) => {
+          v.name('data');
         });
       }),
     ).toThrow(/already exists/);
 
     expect(() =>
       stack((s) => {
-        s.secrets((sec) => {
-          sec.add({ name: 's1', file: './a' } as any);
-          sec.add({ name: 's1', file: './b' } as any);
+        s.secret((sec) => {
+          sec.name('s1');
+          sec.file('./a');
+        });
+        s.secret((sec) => {
+          sec.name('s1');
+          sec.file('./b');
         });
       }),
     ).toThrow(/already exists/);
 
     expect(() =>
       stack((s) => {
-        s.configs((cfg) => {
-          cfg.add({ name: 'c1', file: './a' } as any);
-          cfg.add({ name: 'c1', file: './b' } as any);
+        s.config((cfg) => {
+          cfg.name('c1');
+          cfg.file('./a');
+        });
+        s.config((cfg) => {
+          cfg.name('c1');
+          cfg.file('./b');
         });
       }),
     ).toThrow(/already exists/);
@@ -59,32 +69,32 @@ describe('StackBuilder error conditions', () => {
   it('throws when required names are missing', () => {
     expect(() =>
       stack((s) => {
-        s.networks((n) => {
-          n.add({} as any);
+        s.network(() => {
+          // intentionally missing name
         });
       }),
     ).toThrow(/Network name must be provided/);
 
     expect(() =>
       stack((s) => {
-        s.volumes((v) => {
-          v.add({} as any);
+        s.volume(() => {
+          // intentionally missing name
         });
       }),
     ).toThrow(/Volume name must be provided/);
 
     expect(() =>
       stack((s) => {
-        s.secrets((sec) => {
-          sec.add({} as any);
+        s.secret(() => {
+          // intentionally missing name
         });
       }),
     ).toThrow(/Secret name must be provided/);
 
     expect(() =>
       stack((s) => {
-        s.configs((cfg) => {
-          cfg.add({} as any);
+        s.config(() => {
+          // intentionally missing name
         });
       }),
     ).toThrow(/Config name must be provided/);

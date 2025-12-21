@@ -68,30 +68,56 @@ const [compose] = stack((s) => {
   s.name('my-stack');
   
   // Define networks
-  const myNet = s.networks((n) => {
-    const [net] = n.add({ name: 'my-network', driver: 'bridge' });
-    n.external('existing-network');
-    return net;
+  const [myNet] = s.network((n) => {
+    n.name('my-network');
+    n.driver('bridge');
+  });
+
+  s.network((n) => {
+    n.name('existing-network');
+    n.external();
   });
   
   // Define volumes
-  s.volumes((v) => {
-    v.add({ name: 'my-volume' });
-    v.external('existing-volume');
+  s.volume((v) => {
+    v.name('my-volume');
+  });
+
+  s.volume((v) => {
+    v.name('existing-volume');
+    v.external();
   });
   
   // Define secrets
-  s.secrets((sec) => {
-    sec.file('secret-name', './path/to/secret');
-    sec.environment('secret-from-env', 'ENV_VAR');
-    sec.external('external-secret');
+  s.secret((sec) => {
+    sec.name('secret-name');
+    sec.file('./path/to/secret');
+  });
+
+  s.secret((sec) => {
+    sec.name('secret-from-env');
+    sec.environment('ENV_VAR');
+  });
+
+  s.secret((sec) => {
+    sec.name('external-secret');
+    sec.external();
   });
   
   // Define configs
-  s.configs((cfg) => {
-    cfg.file('config-name', './path/to/config');
-    cfg.content('inline-config', '{ "key": "value" }');
-    cfg.external('external-config');
+  s.config((cfg) => {
+    cfg.name('config-name');
+    cfg.file('./path/to/config');
+  });
+
+  s.config((cfg) => {
+    cfg.name('inline-config');
+    cfg.content('{ "key": "value" }');
+  });
+
+  s.config((cfg) => {
+    cfg.name('external-config');
+    cfg.external();
   });
   
   // Define services

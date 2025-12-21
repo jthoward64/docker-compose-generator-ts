@@ -36,73 +36,101 @@ const ipamSchema = z
 // Network
 // ─────────────────────────────────────────────────────────────────────────────
 export const networkSchema = z
-  .object({
-    name: z.string().optional(),
-    driver: z.string().optional(),
-    driver_opts: z.record(z.string(), stringOrNumber).optional(),
-    ipam: ipamSchema.optional(),
-    external: z
-      .union([booleanOrString, z.object({ name: z.string().optional() }).strict()])
-      .optional(),
-    internal: booleanOrString.optional(),
-    enable_ipv4: booleanOrString.optional(),
-    enable_ipv6: booleanOrString.optional(),
-    attachable: booleanOrString.optional(),
-    labels: listOrDict.optional(),
-  })
-  .strict()
+  .union([
+    z
+      .object({
+        name: z.string().optional(),
+        external: z.union([z.literal(true), z.object({ name: z.string() }).strict()]),
+      })
+      .strict(),
+    z
+      .object({
+        name: z.string().optional(),
+        driver: z.string().optional(),
+        driver_opts: z.record(z.string(), stringOrNumber).optional(),
+        ipam: ipamSchema.optional(),
+        external: z.literal(false).optional(),
+        internal: booleanOrString.optional(),
+        enable_ipv4: booleanOrString.optional(),
+        enable_ipv6: booleanOrString.optional(),
+        attachable: booleanOrString.optional(),
+        labels: listOrDict.optional(),
+      })
+      .strict(),
+  ])
   .nullable();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Volume
 // ─────────────────────────────────────────────────────────────────────────────
 export const volumeSchema = z
-  .object({
-    name: z.string().optional(),
-    driver: z.string().optional(),
-    driver_opts: z.record(z.string(), stringOrNumber).optional(),
-    external: z
-      .union([booleanOrString, z.object({ name: z.string().optional() }).strict()])
-      .optional(),
-    labels: listOrDict.optional(),
-  })
-  .strict()
+  .union([
+    z
+      .object({
+        name: z.string().optional(),
+        external: z.union([z.literal(true), z.object({ name: z.string() }).strict()]),
+      })
+      .strict(),
+    z
+      .object({
+        name: z.string().optional(),
+        driver: z.string().optional(),
+        driver_opts: z.record(z.string(), stringOrNumber).optional(),
+        external: z.literal(false).optional(),
+        labels: listOrDict.optional(),
+      })
+      .strict(),
+  ])
   .nullable();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Secret
 // ─────────────────────────────────────────────────────────────────────────────
 export const secretSchema = z
-  .object({
-    name: z.string().optional(),
-    file: z.string().optional(),
-    environment: z.string().optional(),
-    external: z
-      .union([booleanOrString, z.object({ name: z.string().optional() }).strict()])
-      .optional(),
-    labels: listOrDict.optional(),
-    driver: z.string().optional(),
-    driver_opts: z.record(z.string(), stringOrNumber).optional(),
-    template_driver: z.string().optional(),
-  })
-  .strict();
+  .union([
+    z
+      .object({
+        name: z.string().optional(),
+        external: z.union([z.literal(true), z.object({ name: z.string() }).strict()]),
+      })
+      .strict(),
+    z
+      .object({
+        name: z.string().optional(),
+        file: z.string().optional(),
+        environment: z.string().optional(),
+        external: z.literal(false).optional(),
+        labels: listOrDict.optional(),
+        driver: z.string().optional(),
+        driver_opts: z.record(z.string(), stringOrNumber).optional(),
+        template_driver: z.string().optional(),
+      })
+      .strict(),
+  ]);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Config
 // ─────────────────────────────────────────────────────────────────────────────
 export const configSchema = z
-  .object({
-    name: z.string().optional(),
-    file: z.string().optional(),
-    content: z.string().optional(),
-    environment: z.string().optional(),
-    external: z
-      .union([booleanOrString, z.object({ name: z.string().optional() }).strict()])
-      .optional(),
-    labels: listOrDict.optional(),
-    template_driver: z.string().optional(),
-  })
-  .strict();
+  .union([
+    z
+      .object({
+        name: z.string().optional(),
+        external: z.union([z.literal(true), z.object({ name: z.string() }).strict()]),
+      })
+      .strict(),
+    z
+      .object({
+        name: z.string().optional(),
+        file: z.string().optional(),
+        content: z.string().optional(),
+        environment: z.string().optional(),
+        external: z.literal(false).optional(),
+        labels: listOrDict.optional(),
+        template_driver: z.string().optional(),
+      })
+      .strict(),
+  ]);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Model

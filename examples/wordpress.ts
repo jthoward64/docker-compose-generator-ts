@@ -13,15 +13,17 @@ const [compose] = stack((s) => {
   s.name('wordpress');
 
   // Define volumes
-  s.volumes((v) => {
-    v.add({ name: 'db-data' });
-    v.add({ name: 'wp-content' });
+  const [dbData] = s.volume((v) => {
+    v.name('db-data');
+  });
+
+  const [wpContent] = s.volume((v) => {
+    v.name('wp-content');
   });
 
   // Define network
-  const wpNetwork = s.networks((n) => {
-    const [handle] = n.add({ name: 'wordpress-net' });
-    return handle;
+  const [wpNetwork] = s.network((n) => {
+    n.name('wordpress-net');
   });
 
   // MySQL Database
@@ -38,7 +40,7 @@ const [compose] = stack((s) => {
     });
 
     svc.volumes((v) => {
-      v.quick('db-data', '/var/lib/mysql');
+      v.quick(dbData.name, '/var/lib/mysql');
     });
 
     svc.networks((n) => {
@@ -71,7 +73,7 @@ const [compose] = stack((s) => {
     });
 
     svc.volumes((v) => {
-      v.quick('wp-content', '/var/www/html/wp-content');
+      v.quick(wpContent.name, '/var/www/html/wp-content');
     });
 
     svc.networks((n) => {

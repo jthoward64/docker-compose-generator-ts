@@ -5,28 +5,40 @@ import { ComposeDependsOnCondition, ComposeServiceNetworkConfig, NetworkName, Se
 
 describe('StackBuilder and ComposeStack', () => {
   it('builds a stack with networks, volumes, secrets, configs, and services', () => {
-    let appNetwork: { name: string } | undefined;
-
     const [compose] = stack((s) => {
       s.name('demo-stack');
 
-      s.networks((n) => {
-        const [handle] = n.add({ name: 'app', driver: 'bridge', enableIpv6: true, labels: { role: 'app' } });
-        appNetwork = handle;
-        n.external('ext-net', 'external-net');
+      const [appNetwork] = s.network((n) => {
+        n.name('app');
+        n.driver('bridge');
+        n.enableIpv6(true);
+        n.label('role', 'app');
       });
 
-      s.volumes((v) => {
-        v.add({ name: 'data', driver: 'local', labels: { tier: 'persistent' } });
-        v.external('logs');
+      s.network((n) => {
+        n.name('ext-net');
+        n.external('external-net');
       });
 
-      s.secrets((sec) => {
-        sec.file('db_password', './secrets/db_password.txt');
+      const [dataVolume] = s.volume((v) => {
+        v.name('data');
+        v.driver('local');
+        v.label('tier', 'persistent');
       });
 
-      s.configs((cfg) => {
-        cfg.content('app_config', '{"enabled":true}');
+      s.volume((v) => {
+        v.name('logs');
+        v.external();
+      });
+
+      s.secret((sec) => {
+        sec.name('db_password');
+        sec.file('./secrets/db_password.txt');
+      });
+
+      s.config((cfg) => {
+        cfg.name('app_config');
+        cfg.content('{"enabled":true}');
       });
 
       const [db] = s.service((svc) => {
@@ -36,10 +48,9 @@ describe('StackBuilder and ComposeStack', () => {
           env.add('POSTGRES_PASSWORD', 'pw');
         });
         svc.volumes((v) => {
-          v.quick('data', '/var/lib/postgresql/data');
+          v.quick(dataVolume.name, '/var/lib/postgresql/data');
         });
         svc.networks((n) => {
-          if (!appNetwork) throw new Error('network missing');
           n.add(appNetwork);
         });
         svc.healthcheck({
@@ -58,7 +69,6 @@ describe('StackBuilder and ComposeStack', () => {
           p.add({ target: 9229, published: 49229, protocol: 'tcp' });
         });
         svc.networks((n) => {
-          if (!appNetwork) throw new Error('network missing');
           n.add(appNetwork, (cfg) => {
             cfg.alias('api');
             cfg.ipv4Address('172.30.0.10');
@@ -117,9 +127,11 @@ describe('StackBuilder and ComposeStack', () => {
   it('throws when adding duplicate networks', () => {
     expect(() =>
       stack((s) => {
-        s.networks((n) => {
-          n.add({ name: 'dup' });
-          n.add({ name: 'dup' });
+        s.network((n) => {
+          n.name('dup');
+        });
+        s.network((n) => {
+          n.name('dup');
         });
       }),
     ).toThrow(/already exists/);
@@ -129,32 +141,35 @@ describe('StackBuilder and ComposeStack', () => {
     const [compose] = stack((s) => {
       s.name('external-stack');
 
-      s.networks((n) => {
-        n.add({
-          name: 'custom-net',
-          driver: 'bridge',
-          ipam: {
-            driver: 'my-ipam',
-            config: [{ subnet: '10.10.0.0/16', ipRange: '10.10.0.0/24', gateway: '10.10.0.1', auxAddresses: { host1: '10.10.0.2' } }],
-            options: { foo: 'bar' },
-          },
-          enableIpv4: true,
-          enableIpv6: false,
-          attachable: true,
-        });
-        n.external('existing', 'real-net');
+      s.network((n) => {
+        n.name('custom-net');
+        n.driver('bridge');
+        n.ipamDriver('my-ipam');
+        n.ipamConfig({ subnet: '10.10.0.0/16', ipRange: '10.10.0.0/24', gateway: '10.10.0.1', auxAddresses: { host1: '10.10.0.2' } });
+        n.ipamOption('foo', 'bar');
+        n.enableIpv4(true);
+        n.enableIpv6(false);
+        n.attachable(true);
       });
 
-      s.volumes((v) => {
-        v.external('ext-vol');
+      s.network((n) => {
+        n.name('existing');
+        n.external('real-net');
       });
 
-      s.secrets((sec) => {
-        sec.external('ext-secret');
+      s.volume((v) => {
+        v.name('ext-vol');
+        v.external();
       });
 
-      s.configs((cfg) => {
-        cfg.external('ext-config');
+      s.secret((sec) => {
+        sec.name('ext-secret');
+        sec.external();
+      });
+
+      s.config((cfg) => {
+        cfg.name('ext-config');
+        cfg.external();
       });
 
       s.service((svc) => {

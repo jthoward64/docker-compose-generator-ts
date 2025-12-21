@@ -14,9 +14,9 @@ import { stack } from '@tajetaje/docker-compose-generator-ts';
 const [compose] = stack((s) => {
   s.name('example');
 
-  const net = s.networks((n) => {
-    const [handle] = n.add({ name: 'app', driver: 'bridge' });
-    return handle;
+  const [net] = s.network((n) => {
+    n.name('app');
+    n.driver('bridge');
   });
 
   s.service((svc) => {

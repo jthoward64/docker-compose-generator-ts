@@ -27,14 +27,6 @@ import {
 import type { ServiceDsl, StackDsl } from '../../dsl/stack.ts';
 import type { ServiceFn } from '../../dsl/service.ts';
 import type {
-  StackConfigsDsl,
-  StackNetworksDsl,
-  StackSecretsDsl,
-  StackVolumesDsl,
-  StackConfigsFn,
-  StackNetworksFn,
-  StackSecretsFn,
-  StackVolumesFn,
   NetworkResourceDsl,
   VolumeResourceDsl,
   SecretResourceDsl,
@@ -208,47 +200,6 @@ export class StackBuilder {
 
     this.configsMap.set(name, config);
     return { name } satisfies ConfigHandle;
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Public DSL methods
-  // ─────────────────────────────────────────────────────────────────────────
-
-  networks<R>(fn: (dsl: StackNetworksDsl) => R): R {
-    const dsl: StackNetworksDsl = {
-      add: (input: NetworkInput) => [this.addNetwork(input)],
-      external: (name: string, externalName?: string) => [this.addExternalNetwork(name, externalName)],
-    };
-    return fn(dsl);
-  }
-
-  volumes<R>(fn: (dsl: StackVolumesDsl) => R): R {
-    const dsl: StackVolumesDsl = {
-      add: (input: VolumeInput) => [this.addVolume(input)],
-      external: (name: string) => [this.addExternalVolume(name)],
-    };
-    return fn(dsl);
-  }
-
-  secrets<R>(fn: (dsl: StackSecretsDsl) => R): R {
-    const dsl: StackSecretsDsl = {
-      add: (input: SecretInput) => [this.addSecret(input)],
-      file: (name: string, filePath: string) => [this.addSecret({ name, file: filePath })],
-      environment: (name: string, envVar: string) => [this.addSecret({ name, environment: envVar })],
-      external: (name: string) => [this.addSecret({ name, external: true })],
-    };
-    return fn(dsl);
-  }
-
-  configs<R>(fn: (dsl: StackConfigsDsl) => R): R {
-    const dsl: StackConfigsDsl = {
-      add: (input: ConfigInput) => [this.addConfig(input)],
-      file: (name: string, filePath: string) => [this.addConfig({ name, file: filePath })],
-      content: (name: string, content: string) => [this.addConfig({ name, content })],
-      environment: (name: string, envVar: string) => [this.addConfig({ name, environment: envVar })],
-      external: (name: string) => [this.addConfig({ name, external: true })],
-    };
-    return fn(dsl);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -528,13 +479,9 @@ export class StackBuilder {
   createDsl(): StackDsl {
     return {
       name: (value: string) => this.name(value),
-      networks: <R>(fn: StackNetworksFn<R>) => this.networks(fn),
       network: <R>(fn: NetworkResourceFn<R>) => this.network(fn),
-      volumes: <R>(fn: StackVolumesFn<R>) => this.volumes(fn),
       volume: <R>(fn: VolumeResourceFn<R>) => this.volume(fn),
-      secrets: <R>(fn: StackSecretsFn<R>) => this.secrets(fn),
       secret: <R>(fn: SecretResourceFn<R>) => this.secret(fn),
-      configs: <R>(fn: StackConfigsFn<R>) => this.configs(fn),
       config: <R>(fn: ConfigResourceFn<R>) => this.config(fn),
       service: <R>(fn: ServiceFn<R>) => this.service(fn),
     } satisfies StackDsl;
