@@ -23,6 +23,7 @@ import type {
   ComposeUlimits,
   DependsOnConditionInput,
   ServiceName,
+  ComposeRestartPolicyValue,
 } from "../../types.ts";
 
 type Pruned<T> = { [K in keyof T as T[K] extends undefined ? never : K]: T[K] };
@@ -146,7 +147,7 @@ export class ServiceState {
   private isolationValue?: string;
   private pidValue?: string | null;
   private platformValue?: string;
-  private restartValue?: string;
+  private restartValue?: ComposeRestartPolicyValue;
   private runtimeValue?: string;
   private scaleValue?: number | string;
   private stopGracePeriodValue?: string;
@@ -206,7 +207,7 @@ export class ServiceState {
 
   // Environment setters
   setEnvironment(
-    value: Record<string, string | number | boolean | null> | string[],
+    value: Record<string, string | number | boolean | null> | string[]
   ): void {
     this.environmentValue = Array.isArray(value) ? [...value] : { ...value };
   }
@@ -345,13 +346,13 @@ export class ServiceState {
 
   // Labels
   setLabels(
-    value: Record<string, string | number | boolean | null> | string[],
+    value: Record<string, string | number | boolean | null> | string[]
   ): void {
     this.labelsValue = value;
   }
 
   setAnnotations(
-    value: Record<string, string | number | boolean | null> | string[],
+    value: Record<string, string | number | boolean | null> | string[]
   ): void {
     this.annotationsValue = value;
   }
@@ -525,7 +526,7 @@ export class ServiceState {
     this.platformValue = value;
   }
 
-  setRestart(value: string): void {
+  setRestart(value: ComposeRestartPolicyValue): void {
     this.restartValue = value;
   }
 

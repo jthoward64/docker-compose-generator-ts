@@ -34,6 +34,7 @@ import type {
   BlkioConfig,
   ComposeBuildConfig,
   ComposeServiceSecretConfig,
+  ComposeRestartPolicyValue,
 } from "../../types.ts";
 import { CommandProperty } from "./properties/command.ts";
 import { DependsProperty } from "./properties/depends.ts";
@@ -524,7 +525,7 @@ export class ServiceBuilder implements ServiceHandle {
     this.state.setHealthcheck(value);
   }
 
-  restart(value: string): void {
+  restart(value: ComposeRestartPolicyValue): void {
     this.state.setRestart(value);
   }
 

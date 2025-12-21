@@ -510,6 +510,13 @@ export type ComposeEnvFile = string | Array<string | ComposeEnvFileConfig>;
 // ─────────────────────────────────────────────────────────────────────────────
 // Full ComposeService
 // ─────────────────────────────────────────────────────────────────────────────
+export type ComposeRestartPolicyValue =
+  | "no"
+  | "always"
+  | "on-failure"
+  | "unless-stopped"
+  | `on-failure:${number}`;
+
 export interface ComposeService {
   image?: string;
   build?: ComposeBuild;
@@ -585,7 +592,7 @@ export interface ComposeService {
   pull_policy?: ComposePullPolicy;
   pull_refresh_after?: string;
   read_only?: boolean | string;
-  restart?: string;
+  restart?: ComposeRestartPolicyValue;
   runtime?: string;
   scale?: number | string;
   security_opt?: string[];
@@ -672,7 +679,7 @@ export interface NetworkReference {
 
 /** Helper to check if input is a NetworkReference */
 export const isNetworkReference = (
-  input: NetworkInput | NetworkReference,
+  input: NetworkInput | NetworkReference
 ): input is NetworkReference => {
   return "external" in input && input.external === true && !("driver" in input);
 };

@@ -10,6 +10,7 @@ import type {
   Logging,
   ComposeDevice,
   ProviderConfig,
+  ComposeRestartPolicyValue,
 } from "../types.ts";
 
 import type { BuildFn, NetworksFn, GpusFn } from "./builders.ts";
@@ -108,7 +109,7 @@ export interface ServiceDsl {
   // Health & Lifecycle
   // ─────────────────────────────────────────────────────────────────────────
   healthcheck: (value: Healthcheck) => void;
-  restart: (value: string) => void;
+  restart: (value: ComposeRestartPolicyValue) => void;
   stopSignal: (value: string) => void;
   stopGracePeriod: (value: string) => void;
   postStart: (hook: ServiceHook) => void;
