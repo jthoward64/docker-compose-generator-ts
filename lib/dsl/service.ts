@@ -41,10 +41,7 @@ export interface ServiceDsl {
   // ─────────────────────────────────────────────────────────────────────────
   // Build
   // ─────────────────────────────────────────────────────────────────────────
-  build: {
-    (value: string | ServiceBuild): void;
-    <R>(fn: BuildFn<R>): R;
-  };
+  build: <R>(fn: BuildFn<R>) => R;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Dependencies & Networking
@@ -73,7 +70,14 @@ export interface ServiceDsl {
   // ─────────────────────────────────────────────────────────────────────────
   // Ports & Expose
   // ─────────────────────────────────────────────────────────────────────────
-  ports: (value: ComposePort) => void;
+  ports: {
+    (value: ComposePort): void;
+    (
+      source: number | string,
+      target?: number | string,
+      protocol?: "tcp" | "udp"
+    ): void;
+  };
   expose: (port: number | string | Array<number | string>) => void;
 
   // ─────────────────────────────────────────────────────────────────────────

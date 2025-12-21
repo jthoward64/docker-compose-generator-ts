@@ -50,7 +50,9 @@ const [compose] = stack((s) => {
   // Node.js API Backend
   const [api] = s.service((svc) => {
     svc.name("api");
-    svc.build("./api");
+    svc.build((b) => {
+      b.context("./api");
+    });
     svc.restart("unless-stopped");
 
     svc.environment("NODE_ENV", "production");

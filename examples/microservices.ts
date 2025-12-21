@@ -89,7 +89,9 @@ const [compose] = stack((s) => {
   // User Service
   s.service((svc) => {
     svc.name("user-service");
-    svc.build("./services/user");
+    svc.build((b) => {
+      b.context("./services/user");
+    });
     svc.restart("always");
 
     svc.environment("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672");
@@ -121,7 +123,9 @@ const [compose] = stack((s) => {
   // Order Service
   s.service((svc) => {
     svc.name("order-service");
-    svc.build("./services/order");
+    svc.build((b) => {
+      b.context("./services/order");
+    });
     svc.restart("always");
 
     svc.environment("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672");
@@ -153,7 +157,9 @@ const [compose] = stack((s) => {
   // Notification Service
   s.service((svc) => {
     svc.name("notification-service");
-    svc.build("./services/notification");
+    svc.build((b) => {
+      b.context("./services/notification");
+    });
     svc.restart("always");
 
     svc.environment("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672");

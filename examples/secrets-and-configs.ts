@@ -100,7 +100,9 @@ const [compose] = stack((s) => {
   // Application with secrets and configs
   s.service((svc) => {
     svc.name("app");
-    svc.build("./app");
+    svc.build((b) => {
+      b.context("./app");
+    });
     svc.restart("unless-stopped");
 
     svc.environment("DB_HOST", "database");

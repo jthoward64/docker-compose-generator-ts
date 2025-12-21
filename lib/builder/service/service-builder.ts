@@ -2,6 +2,8 @@ import { ZodError } from "zod";
 
 import {
   createGpusBuilder,
+  type BuildDsl,
+  type BuildFn,
   type GpusDsl,
   type NetworkAttachmentDsl,
   type NetworksDsl,
@@ -30,7 +32,8 @@ import type {
   ComposeGpuDevice,
   ComposeService,
   BlkioConfig,
-  ComposeBuild,
+  ComposeBuildConfig,
+  ComposeServiceSecretConfig,
 } from "../../types.ts";
 import { CommandProperty } from "./properties/command.ts";
 import { DependsProperty } from "./properties/depends.ts";
@@ -41,6 +44,112 @@ import { ServiceNetworksBuilder } from "./properties/networks.ts";
 import { PortsProperty } from "./properties/ports.ts";
 import { composeServiceSchema, serviceSchema } from "./service-schemas.ts";
 import { ServiceState } from "./service-state.ts";
+
+const createBuildBuilder = () => {
+  const build: ComposeBuildConfig = {};
+
+  const ensureRecord = (key: keyof ComposeBuildConfig) => {
+    const current = build[key];
+    if (!current || Array.isArray(current)) {
+      (build as Record<string, unknown>)[key as string] = {};
+    }
+    return (build as Record<string, unknown>)[key as string] as Record<
+      string,
+      any
+    >;
+  };
+
+  const ensureArray = <T>(key: keyof ComposeBuildConfig) => {
+    const current = build[key];
+    if (!Array.isArray(current)) {
+      (build as Record<string, unknown>)[key as string] = [];
+    }
+    return (build as Record<string, unknown>)[key as string] as T[];
+  };
+
+  const dsl: BuildDsl = {
+    context: (value) => {
+      build.context = value;
+    },
+    dockerfile: (value) => {
+      build.dockerfile = value;
+    },
+    dockerfileInline: (value) => {
+      build.dockerfile_inline = value;
+    },
+    arg: (key, value) => {
+      const args = ensureRecord("args");
+      args[key] = value;
+    },
+    ssh: (key, value) => {
+      const ssh = ensureRecord("ssh");
+      ssh[key] = value;
+    },
+    label: (key, value) => {
+      const labels = ensureRecord("labels");
+      labels[key] = value;
+    },
+    cacheFrom: (value) => {
+      ensureArray<string>("cache_from").push(value);
+    },
+    cacheTo: (value) => {
+      ensureArray<string>("cache_to").push(value);
+    },
+    noCache: (value) => {
+      build.no_cache = value;
+    },
+    additionalContext: (name, path) => {
+      const contexts = ensureRecord("additional_contexts");
+      contexts[name] = path;
+    },
+    network: (value) => {
+      build.network = value;
+    },
+    target: (value) => {
+      build.target = value;
+    },
+    shmSize: (value) => {
+      build.shm_size = value;
+    },
+    extraHost: (host, address) => {
+      const hosts = ensureRecord("extra_hosts");
+      hosts[host] = address;
+    },
+    isolation: (value) => {
+      build.isolation = value;
+    },
+    privileged: (value) => {
+      build.privileged = value;
+    },
+    secret: (value) => {
+      ensureArray<string | ComposeServiceSecretConfig>("secrets").push(value);
+    },
+    tag: (value) => {
+      ensureArray<string>("tags").push(value);
+    },
+    ulimit: (name, soft, hard) => {
+      const ulimits = ensureRecord("ulimits");
+      ulimits[name] = { soft, hard: hard ?? soft };
+    },
+    platform: (value) => {
+      ensureArray<string>("platforms").push(value);
+    },
+    pull: (value) => {
+      build.pull = value;
+    },
+    provenance: (value) => {
+      build.provenance = value;
+    },
+    sbom: (value) => {
+      build.sbom = value;
+    },
+    entitlement: (value) => {
+      ensureArray<string>("entitlements").push(value);
+    },
+  };
+
+  return { dsl, value: build };
+};
 
 export class ServiceBuilder implements ServiceHandle {
   static readonly composeSchema = composeServiceSchema;
@@ -146,8 +255,11 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   // Build
   // ─────────────────────────────────────────────────────────────────────────
-  build(value: string | ComposeBuild): void {
+  build<R>(fn: BuildFn<R>): R {
+    const { dsl, value } = createBuildBuilder();
+    const result = fn(dsl);
     this.state.setBuild(value);
+    return result;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -158,7 +270,7 @@ export class ServiceBuilder implements ServiceHandle {
     condition?:
       | "service_started"
       | "service_healthy"
-      | "service_completed_successfully",
+      | "service_completed_successfully"
   ): void {
     if (condition) {
       this.state.addDependsOn(service.name, { condition });
@@ -174,7 +286,7 @@ export class ServiceBuilder implements ServiceHandle {
     const dsl: NetworksDsl = {
       add: <RAttachment = void>(
         network: NetworkHandle,
-        attachmentFn?: (dsl: NetworkAttachmentDsl) => RAttachment,
+        attachmentFn?: (dsl: NetworkAttachmentDsl) => RAttachment
       ) => {
         if (!attachmentFn) {
           this.networksProperty.add(network);
@@ -318,7 +430,7 @@ export class ServiceBuilder implements ServiceHandle {
   // Volumes
   // ─────────────────────────────────────────────────────────────────────────
   private normalizeVolumeInput(
-    input: ServiceVolumeInput,
+    input: ServiceVolumeInput
   ): ComposeServiceVolume {
     const config: ComposeVolumeConfig = { type: input.type };
 
@@ -346,12 +458,12 @@ export class ServiceBuilder implements ServiceHandle {
   volumes(
     volumeOrSource: ServiceVolumeInput | string,
     target?: string,
-    mode?: string,
+    mode?: string
   ): void {
     if (typeof volumeOrSource === "string") {
       if (!target)
         throw new Error(
-          "Target is required when specifying a source string for volumes",
+          "Target is required when specifying a source string for volumes"
         );
       const spec = mode
         ? `${volumeOrSource}:${target}:${mode}`
