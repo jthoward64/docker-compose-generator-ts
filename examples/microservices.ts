@@ -14,15 +14,18 @@ const [compose] = stack((s) => {
   s.name('microservices');
 
   // Define networks
-  const { traefikNet, internalNet } = s.networks((n) => {
-    const [traefik] = n.add({ name: 'traefik-public', driver: 'bridge' });
-    const [internal] = n.add({ name: 'internal', driver: 'bridge' });
-    return { traefikNet: traefik, internalNet: internal };
+  const [traefikNet] = s.network((n) => {
+    n.name('traefik-public');
+    n.driver('bridge');
+  });
+  const [internalNet] = s.network((n) => {
+    n.name('internal');
+    n.driver('bridge');
   });
 
   // Define volumes
-  s.volumes((v) => {
-    v.add({ name: 'rabbitmq-data' });
+  s.volume((v) => {
+    v.name('rabbitmq-data');
   });
 
   // Traefik API Gateway

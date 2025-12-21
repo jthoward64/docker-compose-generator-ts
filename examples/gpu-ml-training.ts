@@ -14,17 +14,14 @@ const [compose] = stack((s) => {
   s.name('ml-training');
 
   // Define volumes
-  s.volumes((v) => {
-    v.add({ name: 'mlflow-data' });
-    v.add({ name: 'minio-data' });
-    v.add({ name: 'training-data' });
-    v.add({ name: 'model-artifacts' });
-  });
+  s.volume((v) => v.name('mlflow-data'));
+  s.volume((v) => v.name('minio-data'));
+  s.volume((v) => v.name('training-data'));
+  s.volume((v) => v.name('model-artifacts'));
 
   // Define network
-  const mlNetwork = s.networks((n) => {
-    const [handle] = n.add({ name: 'ml-network' });
-    return handle;
+  const [mlNetwork] = s.network((n) => {
+    n.name('ml-network');
   });
 
   // MinIO (S3-compatible storage)

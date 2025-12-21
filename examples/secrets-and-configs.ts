@@ -15,45 +15,46 @@ const [compose] = stack((s) => {
   s.name('secrets-example');
 
   // Define secrets
-  let dbPassword: SecretHandle;
-  let apiKey: SecretHandle;
-  
-  s.secrets((sec) => {
-    // Secret from a file
-    [dbPassword] = sec.file('db_password', './secrets/db_password.txt');
-    
-    // Secret from environment variable
-    [apiKey] = sec.environment('api_key', 'API_KEY');
-    
-    // External secret (managed outside compose)
-    sec.external('ssl_cert');
+  const [dbPassword] = s.secret((sec) => {
+    sec.name('db_password');
+    sec.file('./secrets/db_password.txt');
+  });
+
+  const [apiKey] = s.secret((sec) => {
+    sec.name('api_key');
+    sec.environment('API_KEY');
+  });
+
+  s.secret((sec) => {
+    sec.name('ssl_cert');
+    sec.external();
   });
 
   // Define configs
-  let nginxConfig: ConfigHandle;
-  let appConfig: ConfigHandle;
-  
-  s.configs((cfg) => {
-    // Config from a file
-    [nginxConfig] = cfg.file('nginx_config', './config/nginx.conf');
-    
-    // Inline config content
-    [appConfig] = cfg.content('app_config', `
+  const [nginxConfig] = s.config((cfg) => {
+    cfg.name('nginx_config');
+    cfg.file('./config/nginx.conf');
+  });
+
+  const [appConfig] = s.config((cfg) => {
+    cfg.name('app_config');
+    cfg.content(`
       {
         "debug": false,
         "logLevel": "info",
         "maxConnections": 100
       }
     `);
-    
-    // External config
-    cfg.external('feature_flags');
+  });
+
+  s.config((cfg) => {
+    cfg.name('feature_flags');
+    cfg.external();
   });
 
   // Define network
-  const appNetwork = s.networks((n) => {
-    const [handle] = n.add({ name: 'app-network' });
-    return handle;
+  const [appNetwork] = s.network((n) => {
+    n.name('app-network');
   });
 
   // Database with secrets

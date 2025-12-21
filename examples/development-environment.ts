@@ -14,16 +14,19 @@ const [compose] = stack((s) => {
   s.name('dev-environment');
 
   // Define networks
-  const { backendNet, frontendNet } = s.networks((n) => {
-    const [backend] = n.add({ name: 'backend' });
-    const [frontend] = n.add({ name: 'frontend' });
-    return { backendNet: backend, frontendNet: frontend };
+  const [backendNet] = s.network((n) => {
+    n.name('backend');
+  });
+  const [frontendNet] = s.network((n) => {
+    n.name('frontend');
   });
 
   // Define volumes
-  s.volumes((v) => {
-    v.add({ name: 'mongo-data' });
-    v.add({ name: 'redis-data' });
+  s.volume((v) => {
+    v.name('mongo-data');
+  });
+  s.volume((v) => {
+    v.name('redis-data');
   });
 
   // MongoDB

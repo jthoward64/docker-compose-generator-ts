@@ -192,6 +192,10 @@ export type StackNetworksFn<R = void> = (dsl: StackNetworksDsl) => R;
 export type StackVolumesFn<R = void> = (dsl: StackVolumesDsl) => R;
 export type StackSecretsFn<R = void> = (dsl: StackSecretsDsl) => R;
 export type StackConfigsFn<R = void> = (dsl: StackConfigsDsl) => R;
+export type NetworkResourceFn<R = void> = (dsl: NetworkResourceDsl) => R;
+export type VolumeResourceFn<R = void> = (dsl: VolumeResourceDsl) => R;
+export type SecretResourceFn<R = void> = (dsl: SecretResourceDsl) => R;
+export type ConfigResourceFn<R = void> = (dsl: ConfigResourceDsl) => R;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Stack-level Builders
@@ -245,6 +249,58 @@ export interface StackConfigsDsl {
   environment: (name: string, envVar: string) => [ConfigHandle];
   /** Reference an external config */
   external: (name: string) => [ConfigHandle];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Single-resource Stack builders (ergonomic variants)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface NetworkResourceDsl {
+  name: (value: string) => void;
+  driver: (value: string) => void;
+  driverOpt: (key: string, value: string | number) => void;
+  ipamDriver: (value: string) => void;
+  ipamConfig: (config: { subnet?: string; ipRange?: string; gateway?: string; auxAddresses?: Record<string, string> }) => void;
+  ipamOption: (key: string, value: string) => void;
+  external: (externalName?: string) => void;
+  internal: (value: boolean | string) => void;
+  enableIpv4: (value: boolean | string) => void;
+  enableIpv6: (value: boolean | string) => void;
+  attachable: (value: boolean | string) => void;
+  label: (key: string, value: string) => void;
+  labels: (value: Record<string, string>) => void;
+}
+
+export interface VolumeResourceDsl {
+  name: (value: string) => void;
+  driver: (value: string) => void;
+  driverOpt: (key: string, value: string | number) => void;
+  external: (externalName?: string) => void;
+  label: (key: string, value: string) => void;
+  labels: (value: Record<string, string>) => void;
+}
+
+export interface SecretResourceDsl {
+  name: (value: string) => void;
+  file: (filePath: string) => void;
+  environment: (envVar: string) => void;
+  external: (externalName?: string) => void;
+  label: (key: string, value: string) => void;
+  labels: (value: Record<string, string>) => void;
+  driver: (value: string) => void;
+  driverOpt: (key: string, value: string | number) => void;
+  templateDriver: (value: string) => void;
+}
+
+export interface ConfigResourceDsl {
+  name: (value: string) => void;
+  file: (filePath: string) => void;
+  content: (value: string) => void;
+  environment: (envVar: string) => void;
+  external: (externalName?: string) => void;
+  label: (key: string, value: string) => void;
+  labels: (value: Record<string, string>) => void;
+  templateDriver: (value: string) => void;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

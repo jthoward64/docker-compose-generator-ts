@@ -32,6 +32,10 @@ export type {
 	StackVolumesDsl,
 	StackSecretsDsl,
 	StackConfigsDsl,
+	NetworkResourceDsl,
+	VolumeResourceDsl,
+	SecretResourceDsl,
+	ConfigResourceDsl,
 	ListFn,
 	KeyValueFn,
 	KeyValueNumericFn,
@@ -51,6 +55,10 @@ export type {
 	StackVolumesFn,
 	StackSecretsFn,
 	StackConfigsFn,
+	NetworkResourceFn,
+	VolumeResourceFn,
+	SecretResourceFn,
+	ConfigResourceFn,
 } from './dsl/builders.ts';
 export type { ServiceDsl, ServiceFn } from './dsl/service.ts';
 export type { StackDsl, StackFn, StackServiceFn } from './dsl/stack.ts';

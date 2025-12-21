@@ -35,6 +35,14 @@ import type {
   StackNetworksFn,
   StackSecretsFn,
   StackVolumesFn,
+  NetworkResourceDsl,
+  VolumeResourceDsl,
+  SecretResourceDsl,
+  ConfigResourceDsl,
+  NetworkResourceFn,
+  VolumeResourceFn,
+  SecretResourceFn,
+  ConfigResourceFn,
 } from '../../dsl/builders.ts';
 
 type Pruned<T> = { [K in keyof T as T[K] extends undefined ? never : K]: T[K] };
@@ -145,12 +153,12 @@ export class StackBuilder {
     return { name } satisfies VolumeHandle;
   }
 
-  private addExternalVolume(name: string): VolumeHandle {
+  private addExternalVolume(name: string, externalName?: string): VolumeHandle {
     if (this.volumesMap.has(name)) {
       throw new Error(`Volume with name "${name}" already exists`);
     }
 
-    const volume: ComposeVolume = { external: true };
+    const volume: ComposeVolume = externalName ? { external: { name: externalName } } : { external: true };
     this.volumesMap.set(name, volume);
     return { name } satisfies VolumeHandle;
   }
@@ -243,6 +251,246 @@ export class StackBuilder {
     return fn(dsl);
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Single-resource ergonomic builders
+  // ─────────────────────────────────────────────────────────────────────────
+
+  network<R>(fn: NetworkResourceFn<R>): [NetworkHandle, R] {
+    const state: Partial<NetworkInput> & { externalName?: string; externalFlag?: boolean } = {};
+    const ipamConfig: NonNullable<NetworkInput['ipam']>['config'] = [];
+    let ipamOptions: Record<string, string> | undefined;
+
+    const dsl: NetworkResourceDsl = {
+      name: (value) => {
+        state.name = value;
+      },
+      driver: (value) => {
+        state.driver = value;
+      },
+      driverOpt: (key, value) => {
+        if (!state.driverOpts) state.driverOpts = {};
+        state.driverOpts[key] = value;
+      },
+      ipamDriver: (value) => {
+        if (!state.ipam) state.ipam = {};
+        state.ipam.driver = value;
+      },
+      ipamConfig: (config) => {
+        ipamConfig.push({
+          subnet: config.subnet,
+          ipRange: config.ipRange,
+          gateway: config.gateway,
+          auxAddresses: config.auxAddresses,
+        });
+      },
+      ipamOption: (key, value) => {
+        if (!ipamOptions) ipamOptions = {};
+        ipamOptions[key] = value;
+      },
+      external: (externalName) => {
+        state.externalFlag = true;
+        state.externalName = externalName;
+      },
+      internal: (value) => {
+        state.internal = value;
+      },
+      enableIpv4: (value) => {
+        state.enableIpv4 = value;
+      },
+      enableIpv6: (value) => {
+        state.enableIpv6 = value;
+      },
+      attachable: (value) => {
+        state.attachable = value;
+      },
+      label: (key, value) => {
+        if (!state.labels) state.labels = {};
+        if (Array.isArray(state.labels)) {
+          state.labels.push(`${key}=${value}`);
+        } else {
+          (state.labels as Record<string, string>)[key] = value;
+        }
+      },
+      labels: (value) => {
+        state.labels = { ...(state.labels as Record<string, string> | undefined), ...value };
+      },
+    };
+
+    const result = fn(dsl);
+
+    if (!state.name) {
+      throw new Error('Network name must be provided');
+    }
+
+    if (state.externalFlag) {
+      const handle = this.addExternalNetwork(state.name, state.externalName);
+      return [handle, result];
+    }
+
+    if (ipamConfig.length || ipamOptions || state.ipam?.driver) {
+      state.ipam = {
+        driver: state.ipam?.driver,
+        config: ipamConfig.length ? ipamConfig : undefined,
+        options: ipamOptions,
+      };
+    }
+
+    const handle = this.addNetwork(state as NetworkInput);
+    return [handle, result];
+  }
+
+  volume<R>(fn: VolumeResourceFn<R>): [VolumeHandle, R] {
+    const state: Partial<VolumeInput> & { externalName?: string; externalFlag?: boolean } = {};
+
+    const dsl: VolumeResourceDsl = {
+      name: (value) => {
+        state.name = value;
+      },
+      driver: (value) => {
+        state.driver = value;
+      },
+      driverOpt: (key, value) => {
+        if (!state.driverOpts) state.driverOpts = {};
+        state.driverOpts[key] = value;
+      },
+      external: (externalName) => {
+        state.externalFlag = true;
+        state.externalName = externalName;
+      },
+      label: (key, value) => {
+        if (!state.labels) state.labels = {};
+        if (Array.isArray(state.labels)) {
+          state.labels.push(`${key}=${value}`);
+        } else {
+          (state.labels as Record<string, string>)[key] = value;
+        }
+      },
+      labels: (value) => {
+        state.labels = { ...(state.labels as Record<string, string> | undefined), ...value };
+      },
+    };
+
+    const result = fn(dsl);
+
+    if (!state.name) {
+      throw new Error('Volume name must be provided');
+    }
+
+    if (state.externalFlag) {
+      const handle = this.addExternalVolume(state.name, state.externalName);
+      return [handle, result];
+    }
+
+    const handle = this.addVolume(state as VolumeInput);
+    return [handle, result];
+  }
+
+  secret<R>(fn: SecretResourceFn<R>): [SecretHandle, R] {
+    const state: Partial<SecretInput> & { externalName?: string; externalFlag?: boolean } = {};
+
+    const dsl: SecretResourceDsl = {
+      name: (value) => {
+        state.name = value;
+      },
+      file: (filePath) => {
+        state.file = filePath;
+      },
+      environment: (envVar) => {
+        state.environment = envVar;
+      },
+      external: (externalName) => {
+        state.externalFlag = true;
+        state.externalName = externalName;
+      },
+      label: (key, value) => {
+        if (!state.labels) state.labels = {};
+        if (Array.isArray(state.labels)) {
+          state.labels.push(`${key}=${value}`);
+        } else {
+          (state.labels as Record<string, string>)[key] = value;
+        }
+      },
+      labels: (value) => {
+        state.labels = { ...(state.labels as Record<string, string> | undefined), ...value };
+      },
+      driver: (value) => {
+        state.driver = value;
+      },
+      driverOpt: (key, value) => {
+        if (!state.driverOpts) state.driverOpts = {};
+        state.driverOpts[key] = value;
+      },
+      templateDriver: (value) => {
+        state.templateDriver = value;
+      },
+    };
+
+    const result = fn(dsl);
+
+    if (!state.name) {
+      throw new Error('Secret name must be provided');
+    }
+
+    if (state.externalFlag) {
+      const handle = this.addSecret({ name: state.name, external: state.externalName ? { name: state.externalName } : true });
+      return [handle, result];
+    }
+
+    const handle = this.addSecret(state as SecretInput);
+    return [handle, result];
+  }
+
+  config<R>(fn: ConfigResourceFn<R>): [ConfigHandle, R] {
+    const state: Partial<ConfigInput> & { externalName?: string; externalFlag?: boolean } = {};
+
+    const dsl: ConfigResourceDsl = {
+      name: (value) => {
+        state.name = value;
+      },
+      file: (filePath) => {
+        state.file = filePath;
+      },
+      content: (value) => {
+        state.content = value;
+      },
+      environment: (envVar) => {
+        state.environment = envVar;
+      },
+      external: (externalName) => {
+        state.externalFlag = true;
+        state.externalName = externalName;
+      },
+      label: (key, value) => {
+        if (!state.labels) state.labels = {};
+        if (Array.isArray(state.labels)) {
+          state.labels.push(`${key}=${value}`);
+        } else {
+          (state.labels as Record<string, string>)[key] = value;
+        }
+      },
+      labels: (value) => {
+        state.labels = { ...(state.labels as Record<string, string> | undefined), ...value };
+      },
+      templateDriver: (value) => {
+        state.templateDriver = value;
+      },
+    };
+
+    const result = fn(dsl);
+
+    if (!state.name) {
+      throw new Error('Config name must be provided');
+    }
+
+    if (state.externalFlag) {
+      const handle = this.addConfig({ name: state.name, external: state.externalName ? { name: state.externalName } : true });
+      return [handle, result];
+    }
+
+    const handle = this.addConfig(state as ConfigInput);
+    return [handle, result];
+  }
+
   service<R>(builderFn: (dsl: ServiceDsl) => R): [ServiceHandle, R] {
     const serviceBuilder = new ServiceBuilder();
 
@@ -281,9 +529,13 @@ export class StackBuilder {
     return {
       name: (value: string) => this.name(value),
       networks: <R>(fn: StackNetworksFn<R>) => this.networks(fn),
+      network: <R>(fn: NetworkResourceFn<R>) => this.network(fn),
       volumes: <R>(fn: StackVolumesFn<R>) => this.volumes(fn),
+      volume: <R>(fn: VolumeResourceFn<R>) => this.volume(fn),
       secrets: <R>(fn: StackSecretsFn<R>) => this.secrets(fn),
+      secret: <R>(fn: SecretResourceFn<R>) => this.secret(fn),
       configs: <R>(fn: StackConfigsFn<R>) => this.configs(fn),
+      config: <R>(fn: ConfigResourceFn<R>) => this.config(fn),
       service: <R>(fn: ServiceFn<R>) => this.service(fn),
     } satisfies StackDsl;
   }

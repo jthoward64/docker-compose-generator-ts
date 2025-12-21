@@ -13,14 +13,14 @@ const [compose] = stack((s) => {
   s.name('basic-web-app');
 
   // Define a shared network
-  const appNetwork = s.networks((n) => {
-    const [handle] = n.add({ name: 'app-network', driver: 'bridge' });
-    return handle;
+  const [appNetwork] = s.network((n) => {
+    n.name('app-network');
+    n.driver('bridge');
   });
 
   // Define a volume for database persistence
-  s.volumes((v) => {
-    v.add({ name: 'postgres-data' });
+  s.volume((v) => {
+    v.name('postgres-data');
   });
 
   // PostgreSQL Database
