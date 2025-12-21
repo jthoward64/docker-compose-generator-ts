@@ -10,7 +10,6 @@ import type {
   Logging,
   ComposeDevice,
   ProviderConfig,
-  ServiceBuild,
 } from "../types.ts";
 
 import type { BuildFn, NetworksFn, GpusFn } from "./builders.ts";

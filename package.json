@@ -1,6 +1,6 @@
 {
   "name": "@tajetaje/docker-compose-generator-ts",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "exports": {
     ".": {
       "import": "./dist/index.js",

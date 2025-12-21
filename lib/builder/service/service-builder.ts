@@ -387,8 +387,27 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   // Ports
   // ─────────────────────────────────────────────────────────────────────────
-  ports(value: ComposePort): void {
-    this.portsList.push(value);
+  ports(value: ComposePort): void;
+  ports(
+    source: number | string,
+    target?: number | string,
+    protocol?: "tcp" | "udp"
+  ): void;
+  ports(
+    valueOrSource: ComposePort | number | string,
+    target?: number | string,
+    protocol?: "tcp" | "udp"
+  ): void {
+    const entry: ComposePort =
+      typeof valueOrSource === "number" || typeof valueOrSource === "string"
+        ? {
+            target: target ?? valueOrSource,
+            published: target ? valueOrSource : undefined,
+            protocol,
+          }
+        : valueOrSource;
+
+    this.portsList.push(entry);
     this.portsProperty.set(this.portsList);
   }
 

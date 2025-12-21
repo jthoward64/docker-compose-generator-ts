@@ -14,6 +14,8 @@ describe("Service DSL helpers", () => {
         svc.ports({ target: 80, published: 8080 });
         svc.ports({ target: 9000 });
         svc.ports({ target: 443, published: 4443, protocol: "tcp" });
+        svc.ports(7000);
+        svc.ports(8443, 443, "tcp");
 
         svc.volumes("/host/path", "/container", "ro");
         svc.volumes({
@@ -39,6 +41,8 @@ describe("Service DSL helpers", () => {
       { target: 80, published: 8080 },
       { target: 9000 },
       { target: 443, published: 4443, protocol: "tcp" },
+      { target: 7000 },
+      { target: 443, published: 8443, protocol: "tcp" },
     ]);
 
     expect(worker?.volumes).toEqual([
