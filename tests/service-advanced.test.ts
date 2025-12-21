@@ -10,11 +10,11 @@ describe('Service DSL advanced coverage', () => {
     let configA: { name: string } | undefined;
     let configB: { name: string } | undefined;
 
-    const compose = stack((s) => {
+    const [compose] = stack((s) => {
       s.name('full-service-stack');
 
       s.networks((n) => {
-        netHandle = n.add({
+        [netHandle] = n.add({
           name: 'front',
           driver: 'bridge',
           ipam: {
@@ -25,13 +25,13 @@ describe('Service DSL advanced coverage', () => {
       });
 
       s.secrets((sec) => {
-        secretA = sec.file('api_key', './secrets/api_key');
-        secretB = sec.environment('token', 'TOKEN_VAR');
+        [secretA] = sec.file('api_key', './secrets/api_key');
+        [secretB] = sec.environment('token', 'TOKEN_VAR');
       });
 
       s.configs((cfg) => {
-        configA = cfg.file('nginx_conf', './nginx.conf');
-        configB = cfg.content('app_cfg', '{"feature":true}');
+        [configA] = cfg.file('nginx_conf', './nginx.conf');
+        [configB] = cfg.content('app_cfg', '{"feature":true}');
       });
 
       s.service((svc) => {

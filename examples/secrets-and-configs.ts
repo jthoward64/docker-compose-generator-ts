@@ -9,35 +9,36 @@
  */
 
 import { stack } from '../lib/index.ts';
+import type { ConfigHandle, SecretHandle } from '../lib/types.ts';
 
-const compose = stack((s) => {
+const [compose] = stack((s) => {
   s.name('secrets-example');
 
   // Define secrets
-  let dbPassword: ReturnType<typeof Object>;
-  let apiKey: ReturnType<typeof Object>;
+  let dbPassword: SecretHandle;
+  let apiKey: SecretHandle;
   
   s.secrets((sec) => {
     // Secret from a file
-    dbPassword = sec.file('db_password', './secrets/db_password.txt');
+    [dbPassword] = sec.file('db_password', './secrets/db_password.txt');
     
     // Secret from environment variable
-    apiKey = sec.environment('api_key', 'API_KEY');
+    [apiKey] = sec.environment('api_key', 'API_KEY');
     
     // External secret (managed outside compose)
     sec.external('ssl_cert');
   });
 
   // Define configs
-  let nginxConfig: ReturnType<typeof Object>;
-  let appConfig: ReturnType<typeof Object>;
+  let nginxConfig: ConfigHandle;
+  let appConfig: ConfigHandle;
   
   s.configs((cfg) => {
     // Config from a file
-    nginxConfig = cfg.file('nginx_config', './config/nginx.conf');
+    [nginxConfig] = cfg.file('nginx_config', './config/nginx.conf');
     
     // Inline config content
-    appConfig = cfg.content('app_config', `
+    [appConfig] = cfg.content('app_config', `
       {
         "debug": false,
         "logLevel": "info",
@@ -50,12 +51,13 @@ const compose = stack((s) => {
   });
 
   // Define network
-  s.networks((n) => {
-    n.add({ name: 'app-network' });
+  const appNetwork = s.networks((n) => {
+    const [handle] = n.add({ name: 'app-network' });
+    return handle;
   });
 
   // Database with secrets
-  const db = s.service((svc) => {
+  const [db] = s.service((svc) => {
     svc.name('database');
     svc.image('postgres:16');
     svc.restart('unless-stopped');
@@ -68,11 +70,11 @@ const compose = stack((s) => {
 
     // Mount the secret
     svc.secrets((sec) => {
-      sec.add(dbPassword as any);
+      sec.add(dbPassword);
     });
 
     svc.networks((n) => {
-      n.add({ name: 'app-network' });
+      n.add(appNetwork);
     });
 
     svc.healthcheck({
@@ -96,11 +98,11 @@ const compose = stack((s) => {
 
     // Mount the config
     svc.configs((cfg) => {
-      cfg.add(nginxConfig as any);
+      cfg.add(nginxConfig);
     });
 
     svc.networks((n) => {
-      n.add({ name: 'app-network' });
+      n.add(appNetwork);
     });
   });
 
@@ -119,13 +121,13 @@ const compose = stack((s) => {
 
     // Mount multiple secrets
     svc.secrets((sec) => {
-      sec.add(dbPassword as any);
-      sec.add(apiKey as any);
+      sec.add(dbPassword);
+      sec.add(apiKey);
     });
 
     // Mount config
     svc.configs((cfg) => {
-      cfg.add(appConfig as any);
+      cfg.add(appConfig);
     });
 
     svc.ports((p) => {
@@ -133,7 +135,7 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add({ name: 'app-network' });
+      n.add(appNetwork);
     });
 
     svc.depends((d) => {

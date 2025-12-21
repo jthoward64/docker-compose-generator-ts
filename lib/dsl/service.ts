@@ -7,24 +7,24 @@ import type {
   Logging,
   ProviderConfig,
   ServiceBuild,
-} from '../types.ts';
+} from "../types.ts";
 
 import type {
-  ConfigsDsl,
-  DependsDsl,
-  ExposeDsl,
-  GpusDsl,
-  GroupsDsl,
-  HooksDsl,
-  KeyValueDsl,
-  KeyValueNumericDsl,
-  ListDsl,
-  NetworksDsl,
-  PortsDsl,
-  SecretsDsl,
-  UlimitsDsl,
-  VolumesDsl,
-} from './builders.ts';
+  ListFn,
+  KeyValueFn,
+  KeyValueNumericFn,
+  PortsFn,
+  VolumesFn,
+  SecretsFn,
+  ConfigsFn,
+  ExposeFn,
+  UlimitsFn,
+  DependsFn,
+  NetworksFn,
+  GpusFn,
+  HooksFn,
+  GroupsFn,
+} from "./builders.ts";
 
 export interface ServiceDsl {
   // ─────────────────────────────────────────────────────────────────────────
@@ -52,48 +52,48 @@ export interface ServiceDsl {
   // ─────────────────────────────────────────────────────────────────────────
   // Dependencies & Networking
   // ─────────────────────────────────────────────────────────────────────────
-  depends: (fn: (dsl: DependsDsl) => void) => void;
-  networks: (fn: (dsl: NetworksDsl) => void) => void;
-  links: (fn: (dsl: ListDsl) => void) => void;
-  externalLinks: (fn: (dsl: ListDsl) => void) => void;
+  depends: <R>(fn: DependsFn<R>) => R;
+  networks: <R>(fn: NetworksFn<R>) => R;
+  links: <R>(fn: ListFn<R>) => R;
+  externalLinks: <R>(fn: ListFn<R>) => R;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Network configuration
   // ─────────────────────────────────────────────────────────────────────────
   networkMode: (value: string) => void;
   macAddress: (value: string) => void;
-  dns: (fn: (dsl: ListDsl) => void) => void;
-  dnsOpt: (fn: (dsl: ListDsl) => void) => void;
-  dnsSearch: (fn: (dsl: ListDsl) => void) => void;
-  extraHosts: (fn: (dsl: KeyValueDsl) => void) => void;
+  dns: <R>(fn: ListFn<R>) => R;
+  dnsOpt: <R>(fn: ListFn<R>) => R;
+  dnsSearch: <R>(fn: ListFn<R>) => R;
+  extraHosts: <R>(fn: KeyValueFn<R>) => R;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Ports & Expose
   // ─────────────────────────────────────────────────────────────────────────
-  ports: (fn: (dsl: PortsDsl) => void) => void;
-  expose: (fn: (dsl: ExposeDsl) => void) => void;
+  ports: <R>(fn: PortsFn<R>) => R;
+  expose: <R>(fn: ExposeFn<R>) => R;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Environment & Config
   // ─────────────────────────────────────────────────────────────────────────
-  environment: (fn: (dsl: KeyValueDsl) => void) => void;
-  envFile: (fn: (dsl: ListDsl) => void) => void;
-  labels: (fn: (dsl: KeyValueDsl) => void) => void;
-  labelFile: (fn: (dsl: ListDsl) => void) => void;
-  annotations: (fn: (dsl: KeyValueDsl) => void) => void;
+  environment: <R>(fn: KeyValueFn<R>) => R;
+  envFile: <R>(fn: ListFn<R>) => R;
+  labels: <R>(fn: KeyValueFn<R>) => R;
+  labelFile: <R>(fn: ListFn<R>) => R;
+  annotations: <R>(fn: KeyValueFn<R>) => R;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Volumes & Storage
   // ─────────────────────────────────────────────────────────────────────────
-  volumes: (fn: (dsl: VolumesDsl) => void) => void;
-  volumesFrom: (fn: (dsl: ListDsl) => void) => void;
-  tmpfs: (fn: (dsl: ListDsl) => void) => void;
+  volumes: <R>(fn: VolumesFn<R>) => R;
+  volumesFrom: <R>(fn: ListFn<R>) => R;
+  tmpfs: <R>(fn: ListFn<R>) => R;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Secrets & Configs
   // ─────────────────────────────────────────────────────────────────────────
-  secrets: (fn: (dsl: SecretsDsl) => void) => void;
-  configs: (fn: (dsl: ConfigsDsl) => void) => void;
+  secrets: <R>(fn: SecretsFn<R>) => R;
+  configs: <R>(fn: ConfigsFn<R>) => R;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Health & Lifecycle
@@ -102,8 +102,8 @@ export interface ServiceDsl {
   restart: (value: string) => void;
   stopSignal: (value: string) => void;
   stopGracePeriod: (value: string) => void;
-  postStart: (fn: (dsl: HooksDsl) => void) => void;
-  preStop: (fn: (dsl: HooksDsl) => void) => void;
+  postStart: <R>(fn: HooksFn<R>) => R;
+  preStop: <R>(fn: HooksFn<R>) => R;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Runtime
@@ -120,9 +120,9 @@ export interface ServiceDsl {
   // ─────────────────────────────────────────────────────────────────────────
   // Security
   // ─────────────────────────────────────────────────────────────────────────
-  capAdd: (fn: (dsl: ListDsl) => void) => void;
-  capDrop: (fn: (dsl: ListDsl) => void) => void;
-  securityOpt: (fn: (dsl: ListDsl) => void) => void;
+  capAdd: <R>(fn: ListFn<R>) => R;
+  capDrop: <R>(fn: ListFn<R>) => R;
+  securityOpt: <R>(fn: ListFn<R>) => R;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Deployment & Resources
@@ -167,13 +167,13 @@ export interface ServiceDsl {
   // ─────────────────────────────────────────────────────────────────────────
   // Ulimits
   // ─────────────────────────────────────────────────────────────────────────
-  ulimits: (fn: (dsl: UlimitsDsl) => void) => void;
+  ulimits: <R>(fn: UlimitsFn<R>) => R;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Device & cgroup
   // ─────────────────────────────────────────────────────────────────────────
-  devices: (fn: (dsl: ListDsl) => void) => void;
-  deviceCgroupRules: (fn: (dsl: ListDsl) => void) => void;
+  devices: <R>(fn: ListFn<R>) => R;
+  deviceCgroupRules: <R>(fn: ListFn<R>) => R;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Process
@@ -191,15 +191,15 @@ export interface ServiceDsl {
   // ─────────────────────────────────────────────────────────────────────────
   // Sysctls & cgroup
   // ─────────────────────────────────────────────────────────────────────────
-  sysctls: (fn: (dsl: KeyValueNumericDsl) => void) => void;
+  sysctls: <R>(fn: KeyValueNumericFn<R>) => R;
   cgroupParent: (value: string) => void;
-  cgroup: (value: 'host' | 'private') => void;
+  cgroup: (value: "host" | "private") => void;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Isolation & storage
   // ─────────────────────────────────────────────────────────────────────────
   isolation: (value: string) => void;
-  storageOpt: (fn: (dsl: KeyValueDsl) => void) => void;
+  storageOpt: <R>(fn: KeyValueFn<R>) => R;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Credentials
@@ -209,9 +209,9 @@ export interface ServiceDsl {
   // ─────────────────────────────────────────────────────────────────────────
   // Pull & Profiles
   // ─────────────────────────────────────────────────────────────────────────
-  pullPolicy: (value: 'always' | 'never' | 'missing' | 'build') => void;
+  pullPolicy: (value: "always" | "never" | "missing" | "build") => void;
   pullRefreshAfter: (value: string) => void;
-  profiles: (fn: (dsl: ListDsl) => void) => void;
+  profiles: <R>(fn: ListFn<R>) => R;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Scaling
@@ -226,12 +226,12 @@ export interface ServiceDsl {
   // ─────────────────────────────────────────────────────────────────────────
   // GPUs
   // ─────────────────────────────────────────────────────────────────────────
-  gpus: (fn: (dsl: GpusDsl) => void) => void;
+  gpus: <R>(fn: GpusFn<R>) => R;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Groups
   // ─────────────────────────────────────────────────────────────────────────
-  groupAdd: (fn: (dsl: GroupsDsl) => void) => void;
+  groupAdd: <R>(fn: GroupsFn<R>) => R;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Provider (external management)
@@ -244,6 +244,6 @@ export interface ServiceDsl {
   useApiSocket: (value: boolean) => void;
 }
 
-export type ServiceFn = (dsl: ServiceDsl) => void;
+export type ServiceFn<R = void> = (dsl: ServiceDsl) => R;
 
 export {};

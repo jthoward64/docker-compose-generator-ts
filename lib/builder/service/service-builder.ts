@@ -128,9 +128,9 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   // Dependencies
   // ─────────────────────────────────────────────────────────────────────────
-  depends(fn: (dsl: DependsDsl) => void): void {
+  depends<R>(fn: (dsl: DependsDsl) => R): R {
     const { dsl, simple, conditions } = createDependsBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     
     if (simple.length > 0) {
       this.dependsProperty.add(...simple);
@@ -138,17 +138,19 @@ export class ServiceBuilder implements ServiceHandle {
     for (const { service, condition } of conditions) {
       this.state.addDependsOn(service.name, { condition });
     }
+
+    return result;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Networks
   // ─────────────────────────────────────────────────────────────────────────
-  networks(fn: (dsl: NetworksDsl) => void): void {
+  networks<R>(fn: (dsl: NetworksDsl) => R): R {
     const dsl: NetworksDsl = {
-      add: (network: NetworkHandle, attachmentFn?: (dsl: NetworkAttachmentDsl) => void) => {
+      add: <RAttachment = void>(network: NetworkHandle, attachmentFn?: (dsl: NetworkAttachmentDsl) => RAttachment) => {
         if (!attachmentFn) {
           this.networksProperty.add(network);
-          return;
+          return undefined;
         }
 
         const attachment: ServiceNetworkAttachment = {};
@@ -167,7 +169,7 @@ export class ServiceBuilder implements ServiceHandle {
           priority: (value) => { attachment.priority = value; },
           gwPriority: (value) => { attachment.gwPriority = value; },
         };
-        attachmentFn(attachmentDsl);
+        const attachmentResult = attachmentFn(attachmentDsl);
         
         if (aliases.length > 0) {
           attachment.aliases = aliases;
@@ -180,25 +182,28 @@ export class ServiceBuilder implements ServiceHandle {
         }
         
         this.networksProperty.add(network, attachment);
+        return attachmentResult;
       },
     };
-    fn(dsl);
+    return fn(dsl);
   }
 
-  links(fn: (dsl: ListDsl) => void): void {
+  links<R>(fn: (dsl: ListDsl) => R): R {
     const { dsl, values } = createListBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setLinks(values);
     }
+    return result;
   }
 
-  externalLinks(fn: (dsl: ListDsl) => void): void {
+  externalLinks<R>(fn: (dsl: ListDsl) => R): R {
     const { dsl, values } = createListBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setExternalLinks(values);
     }
+    return result;
   }
 
   networkMode(value: string): void {
@@ -209,144 +214,160 @@ export class ServiceBuilder implements ServiceHandle {
     this.state.setMacAddress(value);
   }
 
-  dns(fn: (dsl: ListDsl) => void): void {
+  dns<R>(fn: (dsl: ListDsl) => R): R {
     const { dsl, values } = createListBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setDns(values);
     }
+    return result;
   }
 
-  dnsOpt(fn: (dsl: ListDsl) => void): void {
+  dnsOpt<R>(fn: (dsl: ListDsl) => R): R {
     const { dsl, values } = createListBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setDnsOpt(values);
     }
+    return result;
   }
 
-  dnsSearch(fn: (dsl: ListDsl) => void): void {
+  dnsSearch<R>(fn: (dsl: ListDsl) => R): R {
     const { dsl, values } = createListBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setDnsSearch(values);
     }
+    return result;
   }
 
-  extraHosts(fn: (dsl: KeyValueDsl) => void): void {
+  extraHosts<R>(fn: (dsl: KeyValueDsl) => R): R {
     const { dsl, values } = createKeyValueBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (Object.keys(values).length > 0) {
       this.state.setExtraHosts(values);
     }
+    return result;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Ports
   // ─────────────────────────────────────────────────────────────────────────
-  ports(fn: (dsl: PortsDsl) => void): void {
+  ports<R>(fn: (dsl: PortsDsl) => R): R {
     const { dsl, values } = createPortsBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.portsProperty.set(values);
     }
+    return result;
   }
 
-  expose(fn: (dsl: ExposeDsl) => void): void {
+  expose<R>(fn: (dsl: ExposeDsl) => R): R {
     const { dsl, values } = createExposeBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setExpose(values);
     }
+    return result;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Environment
   // ─────────────────────────────────────────────────────────────────────────
-  environment(fn: (dsl: KeyValueDsl) => void): void {
+  environment<R>(fn: (dsl: KeyValueDsl) => R): R {
     const { dsl, values } = createKeyValueBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (Object.keys(values).length > 0) {
       this.environmentProperty.set(values);
     }
+    return result;
   }
 
-  envFile(fn: (dsl: ListDsl) => void): void {
+  envFile<R>(fn: (dsl: ListDsl) => R): R {
     const { dsl, values } = createListBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setEnvFile(values);
     }
+    return result;
   }
 
-  labels(fn: (dsl: KeyValueDsl) => void): void {
+  labels<R>(fn: (dsl: KeyValueDsl) => R): R {
     const { dsl, values } = createKeyValueBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (Object.keys(values).length > 0) {
       this.state.setLabels(values);
     }
+    return result;
   }
 
-  labelFile(fn: (dsl: ListDsl) => void): void {
+  labelFile<R>(fn: (dsl: ListDsl) => R): R {
     const { dsl, values } = createListBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setLabelFile(values);
     }
+    return result;
   }
 
-  annotations(fn: (dsl: KeyValueDsl) => void): void {
+  annotations<R>(fn: (dsl: KeyValueDsl) => R): R {
     const { dsl, values } = createKeyValueBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (Object.keys(values).length > 0) {
       this.state.setAnnotations(values);
     }
+    return result;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Volumes
   // ─────────────────────────────────────────────────────────────────────────
-  volumes(fn: (dsl: VolumesDsl) => void): void {
+  volumes<R>(fn: (dsl: VolumesDsl) => R): R {
     const { dsl, values } = createVolumesBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setVolumes(values as ServiceVolumeInput[]);
     }
+    return result;
   }
 
-  volumesFrom(fn: (dsl: ListDsl) => void): void {
+  volumesFrom<R>(fn: (dsl: ListDsl) => R): R {
     const { dsl, values } = createListBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setVolumesFrom(values);
     }
+    return result;
   }
 
-  tmpfs(fn: (dsl: ListDsl) => void): void {
+  tmpfs<R>(fn: (dsl: ListDsl) => R): R {
     const { dsl, values } = createListBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setTmpfs(values);
     }
+    return result;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Secrets & Configs
   // ─────────────────────────────────────────────────────────────────────────
-  secrets(fn: (dsl: SecretsDsl) => void): void {
+  secrets<R>(fn: (dsl: SecretsDsl) => R): R {
     const { dsl, values } = createSecretsBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setSecrets(values.map((s) => s.name));
     }
+    return result;
   }
 
-  configs(fn: (dsl: ConfigsDsl) => void): void {
+  configs<R>(fn: (dsl: ConfigsDsl) => R): R {
     const { dsl, values } = createConfigsBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setConfigs(values.map((c) => c.name));
     }
+    return result;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -368,20 +389,22 @@ export class ServiceBuilder implements ServiceHandle {
     this.state.setStopGracePeriod(value);
   }
 
-  postStart(fn: (dsl: HooksDsl) => void): void {
+  postStart<R>(fn: (dsl: HooksDsl) => R): R {
     const { dsl, values } = createHooksBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setPostStart(values);
     }
+    return result;
   }
 
-  preStop(fn: (dsl: HooksDsl) => void): void {
+  preStop<R>(fn: (dsl: HooksDsl) => R): R {
     const { dsl, values } = createHooksBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setPreStop(values);
     }
+    return result;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -422,28 +445,31 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   // Security
   // ─────────────────────────────────────────────────────────────────────────
-  capAdd(fn: (dsl: ListDsl) => void): void {
+  capAdd<R>(fn: (dsl: ListDsl) => R): R {
     const { dsl, values } = createListBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setCapAdd(values);
     }
+    return result;
   }
 
-  capDrop(fn: (dsl: ListDsl) => void): void {
+  capDrop<R>(fn: (dsl: ListDsl) => R): R {
     const { dsl, values } = createListBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setCapDrop(values);
     }
+    return result;
   }
 
-  securityOpt(fn: (dsl: ListDsl) => void): void {
+  securityOpt<R>(fn: (dsl: ListDsl) => R): R {
     const { dsl, values } = createListBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setSecurityOpt(values);
     }
+    return result;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -544,31 +570,34 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   // Ulimits
   // ─────────────────────────────────────────────────────────────────────────
-  ulimits(fn: (dsl: UlimitsDsl) => void): void {
+  ulimits<R>(fn: (dsl: UlimitsDsl) => R): R {
     const { dsl, values } = createUlimitsBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (Object.keys(values).length > 0) {
       this.state.setUlimits(values as ComposeUlimits);
     }
+    return result;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Devices
   // ─────────────────────────────────────────────────────────────────────────
-  devices(fn: (dsl: ListDsl) => void): void {
+  devices<R>(fn: (dsl: ListDsl) => R): R {
     const { dsl, values } = createListBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setDevices(values);
     }
+    return result;
   }
 
-  deviceCgroupRules(fn: (dsl: ListDsl) => void): void {
+  deviceCgroupRules<R>(fn: (dsl: ListDsl) => R): R {
     const { dsl, values } = createListBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setDeviceCgroupRules(values);
     }
+    return result;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -600,12 +629,13 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   // Sysctls
   // ─────────────────────────────────────────────────────────────────────────
-  sysctls(fn: (dsl: KeyValueNumericDsl) => void): void {
+  sysctls<R>(fn: (dsl: KeyValueNumericDsl) => R): R {
     const { dsl, values } = createKeyValueNumericBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (Object.keys(values).length > 0) {
       this.state.setSysctls(values);
     }
+    return result;
   }
 
   cgroupParent(value: string): void {
@@ -623,12 +653,13 @@ export class ServiceBuilder implements ServiceHandle {
     this.state.setIsolation(value);
   }
 
-  storageOpt(fn: (dsl: KeyValueDsl) => void): void {
+  storageOpt<R>(fn: (dsl: KeyValueDsl) => R): R {
     const { dsl, values } = createKeyValueBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (Object.keys(values).length > 0) {
       this.state.setStorageOpt(values);
     }
+    return result;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -649,12 +680,13 @@ export class ServiceBuilder implements ServiceHandle {
     this.state.setPullRefreshAfter(value);
   }
 
-  profiles(fn: (dsl: ListDsl) => void): void {
+  profiles<R>(fn: (dsl: ListDsl) => R): R {
     const { dsl, values } = createListBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setProfiles(values);
     }
+    return result;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -674,25 +706,27 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   // GPUs
   // ─────────────────────────────────────────────────────────────────────────
-  gpus(fn: (dsl: GpusDsl) => void): void {
+  gpus<R>(fn: (dsl: GpusDsl) => R): R {
     const { dsl, values } = createGpusBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.all) {
       this.state.setGpus('all');
     } else if (values.devices.length > 0) {
       this.state.setGpus(values.devices as ComposeGpuDevice[]);
     }
+    return result;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Groups
   // ─────────────────────────────────────────────────────────────────────────
-  groupAdd(fn: (dsl: GroupsDsl) => void): void {
+  groupAdd<R>(fn: (dsl: GroupsDsl) => R): R {
     const { dsl, values } = createGroupsBuilder();
-    fn(dsl);
+    const result = fn(dsl);
     if (values.length > 0) {
       this.state.setGroupAdd(values);
     }
+    return result;
   }
 
   // ─────────────────────────────────────────────────────────────────────────

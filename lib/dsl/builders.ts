@@ -140,7 +140,7 @@ export interface NetworkAttachmentDsl {
  */
 export interface NetworksDsl {
   /** Add a network with optional attachment configuration */
-  add: (network: NetworkHandle, attachment?: (dsl: NetworkAttachmentDsl) => void) => void;
+  add: <R = void>(network: NetworkHandle, attachment?: (dsl: NetworkAttachmentDsl) => R) => R | undefined;
 }
 
 /**
@@ -172,26 +172,26 @@ export interface GroupsDsl {
 // ─────────────────────────────────────────────────────────────────────────────
 // Callback helpers (function types)
 // ─────────────────────────────────────────────────────────────────────────────
-export type ListFn = (dsl: ListDsl) => void;
-export type KeyValueFn = (dsl: KeyValueDsl) => void;
-export type KeyValueNumericFn = (dsl: KeyValueNumericDsl) => void;
-export type PortsFn = (dsl: PortsDsl) => void;
-export type VolumesFn = (dsl: VolumesDsl) => void;
-export type SecretsFn = (dsl: SecretsDsl) => void;
-export type ConfigsFn = (dsl: ConfigsDsl) => void;
-export type ExposeFn = (dsl: ExposeDsl) => void;
-export type UlimitsFn = (dsl: UlimitsDsl) => void;
-export type DependsFn = (dsl: DependsDsl) => void;
-export type NetworkAttachmentFn = (dsl: NetworkAttachmentDsl) => void;
-export type NetworksFn = (dsl: NetworksDsl) => void;
-export type GpusFn = (dsl: GpusDsl) => void;
-export type HooksFn = (dsl: HooksDsl) => void;
-export type GroupsFn = (dsl: GroupsDsl) => void;
+export type ListFn<R = void> = (dsl: ListDsl) => R;
+export type KeyValueFn<R = void> = (dsl: KeyValueDsl) => R;
+export type KeyValueNumericFn<R = void> = (dsl: KeyValueNumericDsl) => R;
+export type PortsFn<R = void> = (dsl: PortsDsl) => R;
+export type VolumesFn<R = void> = (dsl: VolumesDsl) => R;
+export type SecretsFn<R = void> = (dsl: SecretsDsl) => R;
+export type ConfigsFn<R = void> = (dsl: ConfigsDsl) => R;
+export type ExposeFn<R = void> = (dsl: ExposeDsl) => R;
+export type UlimitsFn<R = void> = (dsl: UlimitsDsl) => R;
+export type DependsFn<R = void> = (dsl: DependsDsl) => R;
+export type NetworkAttachmentFn<R = void> = (dsl: NetworkAttachmentDsl) => R;
+export type NetworksFn<R = void> = (dsl: NetworksDsl) => R;
+export type GpusFn<R = void> = (dsl: GpusDsl) => R;
+export type HooksFn<R = void> = (dsl: HooksDsl) => R;
+export type GroupsFn<R = void> = (dsl: GroupsDsl) => R;
 
-export type StackNetworksFn = (dsl: StackNetworksDsl) => void;
-export type StackVolumesFn = (dsl: StackVolumesDsl) => void;
-export type StackSecretsFn = (dsl: StackSecretsDsl) => void;
-export type StackConfigsFn = (dsl: StackConfigsDsl) => void;
+export type StackNetworksFn<R = void> = (dsl: StackNetworksDsl) => R;
+export type StackVolumesFn<R = void> = (dsl: StackVolumesDsl) => R;
+export type StackSecretsFn<R = void> = (dsl: StackSecretsDsl) => R;
+export type StackConfigsFn<R = void> = (dsl: StackConfigsDsl) => R;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Stack-level Builders
@@ -202,9 +202,9 @@ export type StackConfigsFn = (dsl: StackConfigsDsl) => void;
  */
 export interface StackNetworksDsl {
   /** Add a network definition */
-  add: (input: NetworkInput) => NetworkHandle;
+  add: (input: NetworkInput) => [NetworkHandle];
   /** Reference an external network */
-  external: (name: string, externalName?: string) => NetworkHandle;
+  external: (name: string, externalName?: string) => [NetworkHandle];
 }
 
 /**
@@ -212,9 +212,9 @@ export interface StackNetworksDsl {
  */
 export interface StackVolumesDsl {
   /** Add a volume definition */
-  add: (input: VolumeInput) => VolumeHandle;
+  add: (input: VolumeInput) => [VolumeHandle];
   /** Reference an external volume */
-  external: (name: string) => VolumeHandle;
+  external: (name: string) => [VolumeHandle];
 }
 
 /**
@@ -222,13 +222,13 @@ export interface StackVolumesDsl {
  */
 export interface StackSecretsDsl {
   /** Add a secret with full configuration */
-  add: (input: SecretInput) => SecretHandle;
+  add: (input: SecretInput) => [SecretHandle];
   /** Add a secret from a file */
-  file: (name: string, filePath: string) => SecretHandle;
+  file: (name: string, filePath: string) => [SecretHandle];
   /** Add a secret from an environment variable */
-  environment: (name: string, envVar: string) => SecretHandle;
+  environment: (name: string, envVar: string) => [SecretHandle];
   /** Reference an external secret */
-  external: (name: string) => SecretHandle;
+  external: (name: string) => [SecretHandle];
 }
 
 /**
@@ -236,15 +236,15 @@ export interface StackSecretsDsl {
  */
 export interface StackConfigsDsl {
   /** Add a config with full configuration */
-  add: (input: ConfigInput) => ConfigHandle;
+  add: (input: ConfigInput) => [ConfigHandle];
   /** Add a config from a file */
-  file: (name: string, filePath: string) => ConfigHandle;
+  file: (name: string, filePath: string) => [ConfigHandle];
   /** Add a config with inline content */
-  content: (name: string, content: string) => ConfigHandle;
+  content: (name: string, content: string) => [ConfigHandle];
   /** Add a config from an environment variable */
-  environment: (name: string, envVar: string) => ConfigHandle;
+  environment: (name: string, envVar: string) => [ConfigHandle];
   /** Reference an external config */
-  external: (name: string) => ConfigHandle;
+  external: (name: string) => [ConfigHandle];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

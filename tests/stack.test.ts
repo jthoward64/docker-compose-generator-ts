@@ -7,11 +7,12 @@ describe('StackBuilder and ComposeStack', () => {
   it('builds a stack with networks, volumes, secrets, configs, and services', () => {
     let appNetwork: { name: string } | undefined;
 
-    const compose = stack((s) => {
+    const [compose] = stack((s) => {
       s.name('demo-stack');
 
       s.networks((n) => {
-        appNetwork = n.add({ name: 'app', driver: 'bridge', enableIpv6: true, labels: { role: 'app' } });
+        const [handle] = n.add({ name: 'app', driver: 'bridge', enableIpv6: true, labels: { role: 'app' } });
+        appNetwork = handle;
         n.external('ext-net', 'external-net');
       });
 
@@ -28,7 +29,7 @@ describe('StackBuilder and ComposeStack', () => {
         cfg.content('app_config', '{"enabled":true}');
       });
 
-      const db = s.service((svc) => {
+      const [db] = s.service((svc) => {
         svc.name('db');
         svc.image('postgres:16');
         svc.environment((env) => {
@@ -125,7 +126,7 @@ describe('StackBuilder and ComposeStack', () => {
   });
 
   it('supports ipam and external resources and matches snapshot', () => {
-    const compose = stack((s) => {
+    const [compose] = stack((s) => {
       s.name('external-stack');
 
       s.networks((n) => {
@@ -166,7 +167,7 @@ describe('StackBuilder and ComposeStack', () => {
   });
 
   it('allows building a stack with no services (name only)', () => {
-    const compose = stack((s) => {
+    const [compose] = stack((s) => {
       s.name('empty');
     });
 

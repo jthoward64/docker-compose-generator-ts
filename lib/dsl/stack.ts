@@ -1,28 +1,32 @@
 import type { ServiceHandle } from '../types.ts';
 
-import type { ServiceDsl } from './service.ts';
+import type { ServiceDsl, ServiceFn } from './service.ts';
 import type {
   StackConfigsDsl,
   StackNetworksDsl,
   StackSecretsDsl,
   StackVolumesDsl,
+  StackConfigsFn,
+  StackNetworksFn,
+  StackSecretsFn,
+  StackVolumesFn,
 } from './builders.ts';
 
-export type { ServiceDsl } from './service.ts';
+export type { ServiceDsl, ServiceFn } from './service.ts';
 
 export interface StackDsl {
   name: (value: string) => void;
   /** Define networks for the stack */
-  networks: (fn: (dsl: StackNetworksDsl) => void) => void;
+  networks: <R>(fn: StackNetworksFn<R>) => R;
   /** Define volumes for the stack */
-  volumes: (fn: (dsl: StackVolumesDsl) => void) => void;
+  volumes: <R>(fn: StackVolumesFn<R>) => R;
   /** Define secrets for the stack */
-  secrets: (fn: (dsl: StackSecretsDsl) => void) => void;
+  secrets: <R>(fn: StackSecretsFn<R>) => R;
   /** Define configs for the stack */
-  configs: (fn: (dsl: StackConfigsDsl) => void) => void;
+  configs: <R>(fn: StackConfigsFn<R>) => R;
   /** Define a service */
-  service: (builder: (dsl: ServiceDsl) => void) => ServiceHandle;
+  service: <R>(builder: ServiceFn<R>) => [ServiceHandle, R];
 }
 
-export type StackFn = (dsl: StackDsl) => void;
-export type StackServiceFn = (dsl: ServiceDsl) => void;
+export type StackFn<R = void> = (dsl: StackDsl) => R;
+export type StackServiceFn<R = void> = (dsl: ServiceDsl) => R;

@@ -4,7 +4,7 @@ import { stack } from '../lib/stack.js';
 
 describe('Service DSL helpers', () => {
   it('supports quick helpers for ports, volumes, ulimits, gpus, and depends', () => {
-    const compose = stack((s) => {
+    const [compose] = stack((s) => {
       s.name('helpers');
 
       s.service((svc) => {
@@ -61,13 +61,14 @@ describe('Service DSL helpers', () => {
   it('covers networking/expose and mixed depends_on paths', () => {
     let a: any;
     let b: any;
-    const compose = stack((s) => {
-      a = s.service((svc) => {
+    const [compose] = stack((s) => {
+      const [aHandle] = s.service((svc) => {
         svc.name('a');
         svc.image('alpine');
       });
+      a = aHandle;
 
-      b = s.service((svc) => {
+      const [bHandle] = s.service((svc) => {
         svc.name('b');
         svc.image('alpine');
         svc.expose((e) => e.add(7000));
@@ -82,6 +83,7 @@ describe('Service DSL helpers', () => {
           d.on({ name: 'c' } as any, 'service_healthy');
         });
       });
+      b = bHandle;
     });
 
     const obj = compose.toObject();

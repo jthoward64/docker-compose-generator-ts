@@ -9,13 +9,13 @@
 
 import { stack } from '../lib/index.ts';
 
-const compose = stack((s) => {
+const [compose] = stack((s) => {
   s.name('basic-web-app');
 
   // Define a shared network
-  let appNetwork: ReturnType<typeof s.service>;
-  s.networks((n) => {
-    appNetwork = n.add({ name: 'app-network', driver: 'bridge' });
+  const appNetwork = s.networks((n) => {
+    const [handle] = n.add({ name: 'app-network', driver: 'bridge' });
+    return handle;
   });
 
   // Define a volume for database persistence
@@ -24,7 +24,7 @@ const compose = stack((s) => {
   });
 
   // PostgreSQL Database
-  const db = s.service((svc) => {
+  const [db] = s.service((svc) => {
     svc.name('database');
     svc.image('postgres:16-alpine');
     svc.restart('unless-stopped');
@@ -40,7 +40,7 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add(appNetwork!);
+      n.add(appNetwork);
     });
 
     svc.healthcheck({
@@ -52,7 +52,7 @@ const compose = stack((s) => {
   });
 
   // Node.js API Backend
-  const api = s.service((svc) => {
+  const [api] = s.service((svc) => {
     svc.name('api');
     svc.build('./api');
     svc.restart('unless-stopped');
@@ -68,7 +68,7 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add(appNetwork!);
+      n.add(appNetwork);
     });
 
     svc.depends((d) => {
@@ -100,7 +100,7 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add(appNetwork!);
+      n.add(appNetwork);
     });
 
     svc.depends((d) => {

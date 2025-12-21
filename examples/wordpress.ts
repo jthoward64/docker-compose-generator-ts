@@ -9,7 +9,7 @@
 
 import { stack } from '../lib/index.ts';
 
-const compose = stack((s) => {
+const [compose] = stack((s) => {
   s.name('wordpress');
 
   // Define volumes
@@ -19,12 +19,13 @@ const compose = stack((s) => {
   });
 
   // Define network
-  s.networks((n) => {
-    n.add({ name: 'wordpress-net' });
+  const wpNetwork = s.networks((n) => {
+    const [handle] = n.add({ name: 'wordpress-net' });
+    return handle;
   });
 
   // MySQL Database
-  const db = s.service((svc) => {
+  const [db] = s.service((svc) => {
     svc.name('mysql');
     svc.image('mysql:8.0');
     svc.restart('always');
@@ -41,7 +42,7 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add({ name: 'wordpress-net' });
+      n.add(wpNetwork);
     });
 
     svc.healthcheck({
@@ -74,7 +75,7 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add({ name: 'wordpress-net' });
+      n.add(wpNetwork);
     });
 
     svc.depends((d) => {

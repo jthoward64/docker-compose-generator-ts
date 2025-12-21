@@ -94,7 +94,7 @@ describe('StackBuilder error conditions', () => {
 describe('ComposeStack.toFile', () => {
   it('writes YAML to a file in a temporary directory and cleans up', async () => {
     await withTmpFile(async (filePath) => {
-      const compose = stack((s) => {
+      const [compose] = stack((s) => {
         s.name('file-stack');
         s.service((svc) => {
           svc.name('web');

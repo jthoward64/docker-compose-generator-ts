@@ -10,13 +10,14 @@
 
 import { stack } from '../lib/index.ts';
 
-const compose = stack((s) => {
+const [compose] = stack((s) => {
   s.name('dev-environment');
 
   // Define networks
-  s.networks((n) => {
-    n.add({ name: 'backend' });
-    n.add({ name: 'frontend' });
+  const { backendNet, frontendNet } = s.networks((n) => {
+    const [backend] = n.add({ name: 'backend' });
+    const [frontend] = n.add({ name: 'frontend' });
+    return { backendNet: backend, frontendNet: frontend };
   });
 
   // Define volumes
@@ -26,7 +27,7 @@ const compose = stack((s) => {
   });
 
   // MongoDB
-  const mongo = s.service((svc) => {
+  const [mongo] = s.service((svc) => {
     svc.name('mongo');
     svc.image('mongo:7');
     svc.restart('unless-stopped');
@@ -45,12 +46,12 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add({ name: 'backend' });
+      n.add(backendNet);
     });
   });
 
   // Redis
-  const redis = s.service((svc) => {
+  const [redis] = s.service((svc) => {
     svc.name('redis');
     svc.image('redis:7-alpine');
     svc.restart('unless-stopped');
@@ -65,7 +66,7 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add({ name: 'backend' });
+      n.add(backendNet);
     });
   });
 
@@ -81,7 +82,7 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add({ name: 'backend' });
+      n.add(backendNet);
     });
   });
 
@@ -114,8 +115,8 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add({ name: 'backend' });
-      n.add({ name: 'frontend' });
+      n.add(backendNet);
+      n.add(frontendNet);
     });
 
     svc.depends((d) => {

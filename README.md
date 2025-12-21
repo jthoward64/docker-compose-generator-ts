@@ -4,27 +4,26 @@ TypeScript DSL for composing Docker Compose stacks with full spec coverage, vali
 
 ## Install
 ```bash
-npm install @jthoward64/docker-compose-generator-ts
+npm install @tajetaje/docker-compose-generator-ts
 ```
 
 ## Quick Start
 ```ts
-import { stack } from '@jthoward64/docker-compose-generator-ts';
+import { stack } from '@tajetaje/docker-compose-generator-ts';
 
-const compose = stack((s) => {
+const [compose] = stack((s) => {
   s.name('example');
 
-  let net;
-  s.networks((n) => {
-    net = n.add({ name: 'app', driver: 'bridge' });
-  
+  const net = s.networks((n) => {
+    const [handle] = n.add({ name: 'app', driver: 'bridge' });
+    return handle;
   });
 
   s.service((svc) => {
     svc.name('api');
     svc.image('nginx:alpine');
     svc.ports(({quick}) => quick(8080, 80));
-    svc.networks(({add}) => nn.add(net));
+    svc.networks(({add}) => add(net));
   });
 });
 

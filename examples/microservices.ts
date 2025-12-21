@@ -10,13 +10,14 @@
 
 import { stack } from '../lib/index.ts';
 
-const compose = stack((s) => {
+const [compose] = stack((s) => {
   s.name('microservices');
 
   // Define networks
-  s.networks((n) => {
-    n.add({ name: 'traefik-public', driver: 'bridge' });
-    n.add({ name: 'internal', driver: 'bridge' });
+  const { traefikNet, internalNet } = s.networks((n) => {
+    const [traefik] = n.add({ name: 'traefik-public', driver: 'bridge' });
+    const [internal] = n.add({ name: 'internal', driver: 'bridge' });
+    return { traefikNet: traefik, internalNet: internal };
   });
 
   // Define volumes
@@ -49,7 +50,7 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add({ name: 'traefik-public' });
+      n.add(traefikNet);
     });
 
     svc.labels((l) => {
@@ -60,7 +61,7 @@ const compose = stack((s) => {
   });
 
   // RabbitMQ Message Queue
-  const rabbitmq = s.service((svc) => {
+  const [rabbitmq] = s.service((svc) => {
     svc.name('rabbitmq');
     svc.image('rabbitmq:3-management-alpine');
     svc.restart('always');
@@ -80,7 +81,7 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add({ name: 'internal' });
+      n.add(internalNet);
     });
 
     svc.healthcheck({
@@ -103,8 +104,8 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add({ name: 'traefik-public' });
-      n.add({ name: 'internal' });
+      n.add(traefikNet);
+      n.add(internalNet);
     });
 
     svc.depends((d) => {
@@ -138,8 +139,8 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add({ name: 'traefik-public' });
-      n.add({ name: 'internal' });
+      n.add(traefikNet);
+      n.add(internalNet);
     });
 
     svc.depends((d) => {
@@ -173,7 +174,7 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add({ name: 'internal' });
+      n.add(internalNet);
     });
 
     svc.depends((d) => {

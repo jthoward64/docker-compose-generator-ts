@@ -64,13 +64,14 @@ npx tsx examples/basic-web-app.ts > docker-compose.yml
 ```typescript
 import { stack } from '../lib/index.ts';
 
-const compose = stack((s) => {
+const [compose] = stack((s) => {
   s.name('my-stack');
   
   // Define networks
-  s.networks((n) => {
-    const net = n.add({ name: 'my-network', driver: 'bridge' });
+  const myNet = s.networks((n) => {
+    const [net] = n.add({ name: 'my-network', driver: 'bridge' });
     n.external('existing-network');
+    return net;
   });
   
   // Define volumes
@@ -94,9 +95,10 @@ const compose = stack((s) => {
   });
   
   // Define services
-  const svc = s.service((svc) => {
+  const [svcHandle] = s.service((svc) => {
     svc.name('my-service');
     // ... service configuration
+    svc.networks((n) => n.add(myNet));
   });
 });
 ```
@@ -104,7 +106,7 @@ const compose = stack((s) => {
 ### Service Level
 
 ```typescript
-s.service((svc) => {
+const [svcHandle] = s.service((svc) => {
   // Identity
   svc.name('my-service');
   svc.image('nginx:alpine');
@@ -131,8 +133,8 @@ s.service((svc) => {
   
   // Networks with optional configuration
   svc.networks((n) => {
-    n.add(networkHandle);
-    n.add(networkHandle, (cfg) => {
+    n.add(myNet);
+    n.add(myNet, (cfg) => {
       cfg.alias('my-alias');
       cfg.ipv4Address('172.20.0.5');
     });
@@ -140,8 +142,8 @@ s.service((svc) => {
   
   // Dependencies
   svc.depends((d) => {
-    d.add(otherService);
-    d.on(dbService, 'service_healthy');
+    d.add(otherServiceHandle);
+    d.on(dbServiceHandle, 'service_healthy');
   });
   
   // Health check

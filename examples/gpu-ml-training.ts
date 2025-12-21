@@ -10,7 +10,7 @@
 
 import { stack } from '../lib/index.ts';
 
-const compose = stack((s) => {
+const [compose] = stack((s) => {
   s.name('ml-training');
 
   // Define volumes
@@ -22,12 +22,13 @@ const compose = stack((s) => {
   });
 
   // Define network
-  s.networks((n) => {
-    n.add({ name: 'ml-network' });
+  const mlNetwork = s.networks((n) => {
+    const [handle] = n.add({ name: 'ml-network' });
+    return handle;
   });
 
   // MinIO (S3-compatible storage)
-  const minio = s.service((svc) => {
+  const [minio] = s.service((svc) => {
     svc.name('minio');
     svc.image('minio/minio');
     svc.restart('unless-stopped');
@@ -48,7 +49,7 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add({ name: 'ml-network' });
+      n.add(mlNetwork);
     });
 
     svc.healthcheck({
@@ -60,7 +61,7 @@ const compose = stack((s) => {
   });
 
   // MLflow Tracking Server
-  const mlflow = s.service((svc) => {
+  const [mlflow] = s.service((svc) => {
     svc.name('mlflow');
     svc.image('ghcr.io/mlflow/mlflow:v2.10.0');
     svc.restart('unless-stopped');
@@ -87,7 +88,7 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add({ name: 'ml-network' });
+      n.add(mlNetwork);
     });
 
     svc.depends((d) => {
@@ -111,7 +112,7 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add({ name: 'ml-network' });
+      n.add(mlNetwork);
     });
   });
 
@@ -145,7 +146,7 @@ const compose = stack((s) => {
     });
 
     svc.networks((n) => {
-      n.add({ name: 'ml-network' });
+      n.add(mlNetwork);
     });
 
     svc.depends((d) => {

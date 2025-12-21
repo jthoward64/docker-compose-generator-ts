@@ -25,11 +25,16 @@ import {
   type VolumeName,
 } from '../../types.ts';
 import type { ServiceDsl, StackDsl } from '../../dsl/stack.ts';
+import type { ServiceFn } from '../../dsl/service.ts';
 import type {
   StackConfigsDsl,
   StackNetworksDsl,
   StackSecretsDsl,
   StackVolumesDsl,
+  StackConfigsFn,
+  StackNetworksFn,
+  StackSecretsFn,
+  StackVolumesFn,
 } from '../../dsl/builders.ts';
 
 type Pruned<T> = { [K in keyof T as T[K] extends undefined ? never : K]: T[K] };
@@ -201,44 +206,44 @@ export class StackBuilder {
   // Public DSL methods
   // ─────────────────────────────────────────────────────────────────────────
 
-  networks(fn: (dsl: StackNetworksDsl) => void): void {
+  networks<R>(fn: (dsl: StackNetworksDsl) => R): R {
     const dsl: StackNetworksDsl = {
-      add: (input: NetworkInput) => this.addNetwork(input),
-      external: (name: string, externalName?: string) => this.addExternalNetwork(name, externalName),
+      add: (input: NetworkInput) => [this.addNetwork(input)],
+      external: (name: string, externalName?: string) => [this.addExternalNetwork(name, externalName)],
     };
-    fn(dsl);
+    return fn(dsl);
   }
 
-  volumes(fn: (dsl: StackVolumesDsl) => void): void {
+  volumes<R>(fn: (dsl: StackVolumesDsl) => R): R {
     const dsl: StackVolumesDsl = {
-      add: (input: VolumeInput) => this.addVolume(input),
-      external: (name: string) => this.addExternalVolume(name),
+      add: (input: VolumeInput) => [this.addVolume(input)],
+      external: (name: string) => [this.addExternalVolume(name)],
     };
-    fn(dsl);
+    return fn(dsl);
   }
 
-  secrets(fn: (dsl: StackSecretsDsl) => void): void {
+  secrets<R>(fn: (dsl: StackSecretsDsl) => R): R {
     const dsl: StackSecretsDsl = {
-      add: (input: SecretInput) => this.addSecret(input),
-      file: (name: string, filePath: string) => this.addSecret({ name, file: filePath }),
-      environment: (name: string, envVar: string) => this.addSecret({ name, environment: envVar }),
-      external: (name: string) => this.addSecret({ name, external: true }),
+      add: (input: SecretInput) => [this.addSecret(input)],
+      file: (name: string, filePath: string) => [this.addSecret({ name, file: filePath })],
+      environment: (name: string, envVar: string) => [this.addSecret({ name, environment: envVar })],
+      external: (name: string) => [this.addSecret({ name, external: true })],
     };
-    fn(dsl);
+    return fn(dsl);
   }
 
-  configs(fn: (dsl: StackConfigsDsl) => void): void {
+  configs<R>(fn: (dsl: StackConfigsDsl) => R): R {
     const dsl: StackConfigsDsl = {
-      add: (input: ConfigInput) => this.addConfig(input),
-      file: (name: string, filePath: string) => this.addConfig({ name, file: filePath }),
-      content: (name: string, content: string) => this.addConfig({ name, content }),
-      environment: (name: string, envVar: string) => this.addConfig({ name, environment: envVar }),
-      external: (name: string) => this.addConfig({ name, external: true }),
+      add: (input: ConfigInput) => [this.addConfig(input)],
+      file: (name: string, filePath: string) => [this.addConfig({ name, file: filePath })],
+      content: (name: string, content: string) => [this.addConfig({ name, content })],
+      environment: (name: string, envVar: string) => [this.addConfig({ name, environment: envVar })],
+      external: (name: string) => [this.addConfig({ name, external: true })],
     };
-    fn(dsl);
+    return fn(dsl);
   }
 
-  service(builderFn: (dsl: ServiceDsl) => void): ServiceHandle {
+  service<R>(builderFn: (dsl: ServiceDsl) => R): [ServiceHandle, R] {
     const serviceBuilder = new ServiceBuilder();
 
     // Use a Proxy to dynamically delegate all ServiceDsl methods to ServiceBuilder
@@ -260,7 +265,7 @@ export class StackBuilder {
       },
     }) as unknown as ServiceDsl;
 
-    builderFn(dsl);
+    const result = builderFn(dsl);
 
     const serviceSpec = serviceBuilder.toComposeService();
 
@@ -269,17 +274,17 @@ export class StackBuilder {
     }
 
     this.servicesMap.set(serviceBuilder.name, serviceSpec);
-    return { name: serviceBuilder.name } satisfies ServiceHandle;
+    return [{ name: serviceBuilder.name } satisfies ServiceHandle, result];
   }
 
   createDsl(): StackDsl {
     return {
       name: (value: string) => this.name(value),
-      networks: (fn: (dsl: StackNetworksDsl) => void) => this.networks(fn),
-      volumes: (fn: (dsl: StackVolumesDsl) => void) => this.volumes(fn),
-      secrets: (fn: (dsl: StackSecretsDsl) => void) => this.secrets(fn),
-      configs: (fn: (dsl: StackConfigsDsl) => void) => this.configs(fn),
-      service: (fn: (dsl: ServiceDsl) => void) => this.service(fn),
+      networks: <R>(fn: StackNetworksFn<R>) => this.networks(fn),
+      volumes: <R>(fn: StackVolumesFn<R>) => this.volumes(fn),
+      secrets: <R>(fn: StackSecretsFn<R>) => this.secrets(fn),
+      configs: <R>(fn: StackConfigsFn<R>) => this.configs(fn),
+      service: <R>(fn: ServiceFn<R>) => this.service(fn),
     } satisfies StackDsl;
   }
 
