@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared primitives
@@ -6,7 +6,10 @@ import { z } from 'zod';
 const stringOrNumber = z.union([z.string(), z.number()]);
 const booleanOrString = z.union([z.boolean(), z.string()]);
 const listOrDict = z.union([
-  z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])),
+  z.record(
+    z.string(),
+    z.union([z.string(), z.number(), z.boolean(), z.null()]),
+  ),
   z.array(z.string()),
 ]);
 const stringOrList = z.union([z.string(), z.array(z.string())]);
@@ -50,7 +53,9 @@ const healthcheckSchema = z
 const loggingSchema = z
   .object({
     driver: z.string().optional(),
-    options: z.record(z.string(), z.union([z.string(), z.number(), z.null()])).optional(),
+    options: z
+      .record(z.string(), z.union([z.string(), z.number(), z.null()]))
+      .optional(),
   })
   .strict();
 
@@ -121,8 +126,12 @@ const buildSchema = z.union([z.string(), buildConfigSchema]);
 // ─────────────────────────────────────────────────────────────────────────────
 // Blkio
 // ─────────────────────────────────────────────────────────────────────────────
-const blkioLimitSchema = z.object({ path: z.string(), rate: stringOrNumber }).strict();
-const blkioWeightSchema = z.object({ path: z.string(), weight: stringOrNumber }).strict();
+const blkioLimitSchema = z
+  .object({ path: z.string(), rate: stringOrNumber })
+  .strict();
+const blkioWeightSchema = z
+  .object({ path: z.string(), weight: stringOrNumber })
+  .strict();
 const blkioConfigSchema = z
   .object({
     device_read_bps: z.array(blkioLimitSchema).optional(),
@@ -150,7 +159,11 @@ const credentialSpecSchema = z
 // ─────────────────────────────────────────────────────────────────────────────
 const dependsOnConditionSchema = z
   .object({
-    condition: z.enum(['service_started', 'service_healthy', 'service_completed_successfully']),
+    condition: z.enum([
+      "service_started",
+      "service_healthy",
+      "service_completed_successfully",
+    ]),
     restart: booleanOrString.optional(),
     required: z.boolean().optional(),
   })
@@ -198,8 +211,10 @@ const volumeBindOptionsSchema = z
   .object({
     propagation: z.string().optional(),
     create_host_path: booleanOrString.optional(),
-    recursive: z.enum(['enabled', 'disabled', 'writable', 'readonly']).optional(),
-    selinux: z.enum(['z', 'Z']).optional(),
+    recursive: z
+      .enum(["enabled", "disabled", "writable", "readonly"])
+      .optional(),
+    selinux: z.enum(["z", "Z"]).optional(),
   })
   .strict();
 
@@ -226,7 +241,7 @@ const volumeImageOptionsSchema = z
 
 const volumeConfigSchema = z
   .object({
-    type: z.enum(['bind', 'volume', 'tmpfs', 'cluster', 'npipe', 'image']),
+    type: z.enum(["bind", "volume", "tmpfs", "cluster", "npipe", "image"]),
     source: z.string().optional(),
     target: z.string().optional(),
     read_only: booleanOrString.optional(),
@@ -296,7 +311,7 @@ const rollbackConfigSchema = z
     failure_action: z.string().optional(),
     monitor: z.string().optional(),
     max_failure_ratio: stringOrNumber.optional(),
-    order: z.enum(['start-first', 'stop-first']).optional(),
+    order: z.enum(["start-first", "stop-first"]).optional(),
   })
   .strict();
 
@@ -307,7 +322,7 @@ const updateConfigSchema = z
     failure_action: z.string().optional(),
     monitor: z.string().optional(),
     max_failure_ratio: stringOrNumber.optional(),
-    order: z.enum(['start-first', 'stop-first']).optional(),
+    order: z.enum(["start-first", "stop-first"]).optional(),
   })
   .strict();
 
@@ -320,7 +335,9 @@ const restartPolicySchema = z
   })
   .strict();
 
-const placementPreferenceSchema = z.object({ spread: z.string().optional() }).strict();
+const placementPreferenceSchema = z
+  .object({ spread: z.string().optional() })
+  .strict();
 
 const placementSchema = z
   .object({
@@ -360,7 +377,7 @@ const serviceHookSchema = z
 const watchActionSchema = z
   .object({
     path: z.string(),
-    action: z.enum(['rebuild', 'sync', 'restart', 'sync+restart', 'sync+exec']),
+    action: z.enum(["rebuild", "sync", "restart", "sync+restart", "sync+exec"]),
     ignore: stringOrList.optional(),
     include: stringOrList.optional(),
     target: z.string().optional(),
@@ -421,7 +438,7 @@ const gpuDeviceSchema = z
   })
   .strict();
 
-const gpusSchema = z.union([z.literal('all'), z.array(gpuDeviceSchema)]);
+const gpusSchema = z.union([z.literal("all"), z.array(gpuDeviceSchema)]);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Env file
@@ -434,7 +451,10 @@ const envFileConfigSchema = z
   })
   .strict();
 
-const envFileSchema = z.union([z.string(), z.array(z.union([z.string(), envFileConfigSchema]))]);
+const envFileSchema = z.union([
+  z.string(),
+  z.array(z.union([z.string(), envFileConfigSchema])),
+]);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Extra hosts
@@ -482,7 +502,7 @@ export const composeServiceSchema = z
     credential_spec: credentialSpecSchema.optional(),
     cap_add: z.array(z.string()).optional(),
     cap_drop: z.array(z.string()).optional(),
-    cgroup: z.enum(['host', 'private']).optional(),
+    cgroup: z.enum(["host", "private"]).optional(),
     cgroup_parent: z.string().optional(),
     container_name: z.string().optional(),
     cpu_count: stringOrNumber.optional(),
@@ -525,7 +545,16 @@ export const composeServiceSchema = z
     profiles: z.array(z.string()).optional(),
     pull_policy: z
       .union([
-        z.enum(['always', 'never', 'build', 'if_not_present', 'missing', 'refresh', 'daily', 'weekly']),
+        z.enum([
+          "always",
+          "never",
+          "build",
+          "if_not_present",
+          "missing",
+          "refresh",
+          "daily",
+          "weekly",
+        ]),
         z.string().regex(/^every_([0-9]+[wdhms])+$/),
       ])
       .optional(),
@@ -539,7 +568,9 @@ export const composeServiceSchema = z
     stdin_open: booleanOrString.optional(),
     stop_grace_period: z.string().optional(),
     stop_signal: z.string().optional(),
-    storage_opt: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
+    storage_opt: z
+      .record(z.string(), z.union([z.string(), z.number()]))
+      .optional(),
     tmpfs: stringOrList.optional(),
     tty: booleanOrString.optional(),
     user: z.string().optional(),
@@ -554,5 +585,5 @@ export const composeServiceSchema = z
   .strict();
 
 export const serviceSchema = composeServiceSchema
-  .extend({ name: z.string().min(1, 'Service name must be set') })
+  .extend({ name: z.string().min(1, "Service name must be set") })
   .strict();

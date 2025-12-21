@@ -1,4 +1,4 @@
-import type { ServiceState } from '../service-state.ts';
+import type { ServiceState } from "../service-state.ts";
 
 export class EnvironmentProperty {
   private readonly state: ServiceState;
@@ -7,7 +7,7 @@ export class EnvironmentProperty {
     this.state = state;
   }
 
-  set(value: Record<string, string>): void {
+  set(value: Record<string, string | number | boolean | null>): void {
     this.state.setEnvironment(value);
   }
 }

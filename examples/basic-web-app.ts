@@ -7,106 +7,94 @@
  * - A PostgreSQL database
  */
 
-import { stack } from '../lib/index.ts';
+import { stack } from "../lib/index.ts";
 
 const [compose] = stack((s) => {
-  s.name('basic-web-app');
+  s.name("basic-web-app");
 
   // Define a shared network
   const [appNetwork] = s.network((n) => {
-    n.name('app-network');
-    n.driver('bridge');
+    n.name("app-network");
+    n.driver("bridge");
   });
 
   // Define a volume for database persistence
   s.volume((v) => {
-    v.name('postgres-data');
+    v.name("postgres-data");
   });
 
   // PostgreSQL Database
   const [db] = s.service((svc) => {
-    svc.name('database');
-    svc.image('postgres:16-alpine');
-    svc.restart('unless-stopped');
+    svc.name("database");
+    svc.image("postgres:16-alpine");
+    svc.restart("unless-stopped");
 
-    svc.environment((env) => {
-      env.add('POSTGRES_USER', 'app');
-      env.add('POSTGRES_PASSWORD', 'secret');
-      env.add('POSTGRES_DB', 'appdb');
-    });
+    svc.environment("POSTGRES_USER", "app");
+    svc.environment("POSTGRES_PASSWORD", "secret");
+    svc.environment("POSTGRES_DB", "appdb");
 
-    svc.volumes((v) => {
-      v.quick('postgres-data', '/var/lib/postgresql/data');
-    });
+    svc.volumes("postgres-data", "/var/lib/postgresql/data");
 
     svc.networks((n) => {
       n.add(appNetwork);
     });
 
     svc.healthcheck({
-      test: ['CMD-SHELL', 'pg_isready -U app -d appdb'],
-      interval: '10s',
-      timeout: '5s',
+      test: ["CMD-SHELL", "pg_isready -U app -d appdb"],
+      interval: "10s",
+      timeout: "5s",
       retries: 5,
     });
   });
 
   // Node.js API Backend
   const [api] = s.service((svc) => {
-    svc.name('api');
-    svc.build('./api');
-    svc.restart('unless-stopped');
+    svc.name("api");
+    svc.build("./api");
+    svc.restart("unless-stopped");
 
-    svc.environment((env) => {
-      env.add('NODE_ENV', 'production');
-      env.add('DATABASE_URL', 'postgresql://app:secret@database:5432/appdb');
-      env.add('PORT', '3000');
-    });
+    svc.environment("NODE_ENV", "production");
+    svc.environment(
+      "DATABASE_URL",
+      "postgresql://app:secret@database:5432/appdb"
+    );
+    svc.environment("PORT", "3000");
 
-    svc.ports((p) => {
-      p.quick(3000, 3000);
-    });
+    svc.ports({ target: 3000, published: 3000 });
 
     svc.networks((n) => {
       n.add(appNetwork);
     });
 
-    svc.depends((d) => {
-      d.on(db, 'service_healthy');
-    });
+    svc.depends(db, "service_healthy");
 
     svc.healthcheck({
-      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health'],
-      interval: '30s',
-      timeout: '10s',
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"],
+      interval: "30s",
+      timeout: "10s",
       retries: 3,
     });
   });
 
   // Nginx Web Server (reverse proxy)
   s.service((svc) => {
-    svc.name('web');
-    svc.image('nginx:alpine');
-    svc.restart('unless-stopped');
+    svc.name("web");
+    svc.image("nginx:alpine");
+    svc.restart("unless-stopped");
 
-    svc.ports((p) => {
-      p.quick(80, 80);
-      p.quick(443, 443);
-    });
+    svc.ports({ target: 80, published: 80 });
+    svc.ports({ target: 443, published: 443 });
 
-    svc.volumes((v) => {
-      v.quick('./nginx/nginx.conf', '/etc/nginx/nginx.conf', 'ro');
-      v.quick('./nginx/ssl', '/etc/nginx/ssl', 'ro');
-    });
+    svc.volumes("./nginx/nginx.conf", "/etc/nginx/nginx.conf", "ro");
+    svc.volumes("./nginx/ssl", "/etc/nginx/ssl", "ro");
 
     svc.networks((n) => {
       n.add(appNetwork);
     });
 
-    svc.depends((d) => {
-      d.on(api, 'service_healthy');
-    });
-      svc.volumes({ type: 'bind', source: './api', target: '/app' });
+    svc.depends(api, "service_healthy");
+    svc.volumes({ type: "bind", source: "./api", target: "/app" });
+  });
 });
 
 // Output the compose file

@@ -1,5 +1,5 @@
-import type { ServiceHandle } from '../../../types.ts';
-import type { ServiceState } from '../service-state.ts';
+import type { ServiceHandle } from "../../../types.ts";
+import type { ServiceState } from "../service-state.ts";
 
 export class DependsProperty {
   private readonly state: ServiceState;

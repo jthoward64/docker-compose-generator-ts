@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { composeServiceSchema } from '../service/service-schemas.ts';
+import { z } from "zod";
+import { composeServiceSchema } from "../service/service-schemas.ts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared primitives
@@ -7,7 +7,10 @@ import { composeServiceSchema } from '../service/service-schemas.ts';
 const stringOrNumber = z.union([z.string(), z.number()]);
 const booleanOrString = z.union([z.boolean(), z.string()]);
 const listOrDict = z.union([
-  z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])),
+  z.record(
+    z.string(),
+    z.union([z.string(), z.number(), z.boolean(), z.null()]),
+  ),
   z.array(z.string()),
 ]);
 const stringOrList = z.union([z.string(), z.array(z.string())]);
@@ -40,7 +43,10 @@ export const networkSchema = z
     z
       .object({
         name: z.string().optional(),
-        external: z.union([z.literal(true), z.object({ name: z.string() }).strict()]),
+        external: z.union([
+          z.literal(true),
+          z.object({ name: z.string() }).strict(),
+        ]),
       })
       .strict(),
     z
@@ -68,7 +74,10 @@ export const volumeSchema = z
     z
       .object({
         name: z.string().optional(),
-        external: z.union([z.literal(true), z.object({ name: z.string() }).strict()]),
+        external: z.union([
+          z.literal(true),
+          z.object({ name: z.string() }).strict(),
+        ]),
       })
       .strict(),
     z
@@ -86,51 +95,55 @@ export const volumeSchema = z
 // ─────────────────────────────────────────────────────────────────────────────
 // Secret
 // ─────────────────────────────────────────────────────────────────────────────
-export const secretSchema = z
-  .union([
-    z
-      .object({
-        name: z.string().optional(),
-        external: z.union([z.literal(true), z.object({ name: z.string() }).strict()]),
-      })
-      .strict(),
-    z
-      .object({
-        name: z.string().optional(),
-        file: z.string().optional(),
-        environment: z.string().optional(),
-        external: z.literal(false).optional(),
-        labels: listOrDict.optional(),
-        driver: z.string().optional(),
-        driver_opts: z.record(z.string(), stringOrNumber).optional(),
-        template_driver: z.string().optional(),
-      })
-      .strict(),
-  ]);
+export const secretSchema = z.union([
+  z
+    .object({
+      name: z.string().optional(),
+      external: z.union([
+        z.literal(true),
+        z.object({ name: z.string() }).strict(),
+      ]),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.string().optional(),
+      file: z.string().optional(),
+      environment: z.string().optional(),
+      external: z.literal(false).optional(),
+      labels: listOrDict.optional(),
+      driver: z.string().optional(),
+      driver_opts: z.record(z.string(), stringOrNumber).optional(),
+      template_driver: z.string().optional(),
+    })
+    .strict(),
+]);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Config
 // ─────────────────────────────────────────────────────────────────────────────
-export const configSchema = z
-  .union([
-    z
-      .object({
-        name: z.string().optional(),
-        external: z.union([z.literal(true), z.object({ name: z.string() }).strict()]),
-      })
-      .strict(),
-    z
-      .object({
-        name: z.string().optional(),
-        file: z.string().optional(),
-        content: z.string().optional(),
-        environment: z.string().optional(),
-        external: z.literal(false).optional(),
-        labels: listOrDict.optional(),
-        template_driver: z.string().optional(),
-      })
-      .strict(),
-  ]);
+export const configSchema = z.union([
+  z
+    .object({
+      name: z.string().optional(),
+      external: z.union([
+        z.literal(true),
+        z.object({ name: z.string() }).strict(),
+      ]),
+    })
+    .strict(),
+  z
+    .object({
+      name: z.string().optional(),
+      file: z.string().optional(),
+      content: z.string().optional(),
+      environment: z.string().optional(),
+      external: z.literal(false).optional(),
+      labels: listOrDict.optional(),
+      template_driver: z.string().optional(),
+    })
+    .strict(),
+]);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Model

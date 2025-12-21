@@ -75,7 +75,10 @@ export interface ComposeUlimitValue {
   hard: number | string;
 }
 
-export type ComposeUlimits = Record<string, number | string | ComposeUlimitValue>;
+export type ComposeUlimits = Record<
+  string,
+  number | string | ComposeUlimitValue
+>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Build configuration
@@ -171,15 +174,23 @@ export interface ComposeCredentialSpec {
 // Depends on
 // ─────────────────────────────────────────────────────────────────────────────
 export interface ComposeDependsOnCondition {
-  condition: 'service_started' | 'service_healthy' | 'service_completed_successfully';
+  condition:
+    | "service_started"
+    | "service_healthy"
+    | "service_completed_successfully";
   restart?: boolean | string;
   required?: boolean;
 }
 
-export type ComposeDependsOn = ServiceName[] | Record<ServiceName, ComposeDependsOnCondition>;
+export type ComposeDependsOn =
+  | ServiceName[]
+  | Record<ServiceName, ComposeDependsOnCondition>;
 
 export interface DependsOnConditionInput {
-  condition: 'service_started' | 'service_healthy' | 'service_completed_successfully';
+  condition:
+    | "service_started"
+    | "service_healthy"
+    | "service_completed_successfully";
   restart?: boolean | string;
   required?: boolean;
 }
@@ -226,8 +237,8 @@ export interface PortInput {
 export interface ComposeVolumeBindOptions {
   propagation?: string;
   create_host_path?: boolean | string;
-  recursive?: 'enabled' | 'disabled' | 'writable' | 'readonly';
-  selinux?: 'z' | 'Z';
+  recursive?: "enabled" | "disabled" | "writable" | "readonly";
+  selinux?: "z" | "Z";
 }
 
 export interface ComposeVolumeVolumeOptions {
@@ -246,7 +257,7 @@ export interface ComposeVolumeImageOptions {
 }
 
 export interface ComposeVolumeConfig {
-  type: 'bind' | 'volume' | 'tmpfs' | 'cluster' | 'npipe' | 'image';
+  type: "bind" | "volume" | "tmpfs" | "cluster" | "npipe" | "image";
   source?: string;
   target?: string;
   read_only?: boolean | string;
@@ -262,8 +273,8 @@ export type ComposeServiceVolume = string | ComposeVolumeConfig;
 export interface VolumeBindInput {
   propagation?: string;
   createHostPath?: boolean | string;
-  recursive?: 'enabled' | 'disabled' | 'writable' | 'readonly';
-  selinux?: 'z' | 'Z';
+  recursive?: "enabled" | "disabled" | "writable" | "readonly";
+  selinux?: "z" | "Z";
 }
 
 export interface VolumeVolumeInput {
@@ -282,7 +293,7 @@ export interface VolumeImageInput {
 }
 
 export interface ServiceVolumeInput {
-  type: 'bind' | 'volume' | 'tmpfs' | 'cluster' | 'npipe' | 'image';
+  type: "bind" | "volume" | "tmpfs" | "cluster" | "npipe" | "image";
   source?: string;
   target?: string;
   readOnly?: boolean | string;
@@ -374,7 +385,7 @@ export interface ComposeRollbackConfig {
   failure_action?: string;
   monitor?: string;
   max_failure_ratio?: number | string;
-  order?: 'start-first' | 'stop-first';
+  order?: "start-first" | "stop-first";
 }
 
 export interface ComposeUpdateConfig {
@@ -383,7 +394,7 @@ export interface ComposeUpdateConfig {
   failure_action?: string;
   monitor?: string;
   max_failure_ratio?: number | string;
-  order?: 'start-first' | 'stop-first';
+  order?: "start-first" | "stop-first";
 }
 
 export interface ComposeRestartPolicy {
@@ -428,7 +439,7 @@ export interface ComposeServiceHook {
 
 export interface ComposeWatchAction {
   path: string;
-  action: 'rebuild' | 'sync' | 'restart' | 'sync+restart' | 'sync+exec';
+  action: "rebuild" | "sync" | "restart" | "sync+restart" | "sync+exec";
   ignore?: string | string[];
   include?: string | string[];
   target?: string;
@@ -455,7 +466,10 @@ export type ComposeExtends = string | ComposeExtendsConfig;
 // ─────────────────────────────────────────────────────────────────────────────
 export interface ComposeProvider {
   type: string;
-  options?: Record<string, string | number | boolean | Array<string | number | boolean>>;
+  options?: Record<
+    string,
+    string | number | boolean | Array<string | number | boolean>
+  >;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -469,17 +483,17 @@ export interface ComposeGpuDevice {
   options?: Record<string, string> | string[];
 }
 
-export type ComposeGpus = 'all' | ComposeGpuDevice[];
+export type ComposeGpus = "all" | ComposeGpuDevice[];
 
 export type ComposePullPolicy =
-  | 'always'
-  | 'never'
-  | 'build'
-  | 'if_not_present'
-  | 'missing'
-  | 'refresh'
-  | 'daily'
-  | 'weekly'
+  | "always"
+  | "never"
+  | "build"
+  | "if_not_present"
+  | "missing"
+  | "refresh"
+  | "daily"
+  | "weekly"
   | `every_${string}`;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -508,7 +522,9 @@ export interface ComposeService {
   volumes?: ComposeServiceVolume[];
   volumes_from?: string[];
   depends_on?: ComposeDependsOn;
-  networks?: ServiceName[] | Record<NetworkName, ComposeServiceNetworkConfig | null>;
+  networks?:
+    | ServiceName[]
+    | Record<NetworkName, ComposeServiceNetworkConfig | null>;
   network_mode?: string;
   healthcheck?: ComposeHealthcheck;
   logging?: ComposeLogging;
@@ -525,7 +541,7 @@ export interface ComposeService {
   credential_spec?: ComposeCredentialSpec;
   cap_add?: string[];
   cap_drop?: string[];
-  cgroup?: 'host' | 'private';
+  cgroup?: "host" | "private";
   cgroup_parent?: string;
   container_name?: string;
   cpu_count?: number | string;
@@ -658,7 +674,7 @@ export interface NetworkReference {
 export const isNetworkReference = (
   input: NetworkInput | NetworkReference,
 ): input is NetworkReference => {
-  return 'external' in input && input.external === true && !('driver' in input);
+  return "external" in input && input.external === true && !("driver" in input);
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

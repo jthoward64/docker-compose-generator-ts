@@ -1,19 +1,13 @@
-import { ZodError } from 'zod';
+import { ZodError } from "zod";
 
+import {
+  createGpusBuilder,
+  type GpusDsl,
+  type NetworkAttachmentDsl,
+  type NetworksDsl,
+} from "../../dsl/builders.ts";
 import type {
-  BlkioConfig,
-  ComposeBuild,
-  ComposeCredentialSpec,
-  ComposeDeploy,
-  ComposeDevelopment,
-  ComposeVolumeBindOptions,
-  ComposeVolumeConfig,
-  ComposeGpuDevice,
-  ComposePullPolicy,
-  ComposeProvider,
-  ComposeService,
-  ComposeServiceConfig,
-  ComposeServiceSecret,
+  ServiceHook,
   ComposeServiceVolume,
   ComposeUlimits,
   HealthcheckInput,
@@ -22,38 +16,31 @@ import type {
   ServiceHandle,
   ServiceNetworkAttachment,
   ServiceVolumeInput,
-} from '../../types.ts';
-import {
-  createDependsBuilder,
-  createGpusBuilder,
-  createGroupsBuilder,
-  createHooksBuilder,
-  createKeyValueBuilder,
-  createKeyValueNumericBuilder,
-  createListBuilder,
-  createPortsBuilder,
-  createUlimitsBuilder,
-  type DependsDsl,
-  type GpusDsl,
-  type GroupsDsl,
-  type HooksDsl,
-  type KeyValueDsl,
-  type KeyValueNumericDsl,
-  type ListDsl,
-  type NetworkAttachmentDsl,
-  type NetworksDsl,
-  type PortsDsl,
-  type UlimitsDsl,
-} from '../../dsl/builders.ts';
-import { CommandProperty } from './properties/command.ts';
-import { DependsProperty } from './properties/depends.ts';
-import { EnvironmentProperty } from './properties/environment.ts';
-import { ImageProperty } from './properties/image.ts';
-import { NameProperty } from './properties/name.ts';
-import { ServiceNetworksBuilder } from './properties/networks.ts';
-import { PortsProperty } from './properties/ports.ts';
-import { composeServiceSchema, serviceSchema } from './service-schemas.ts';
-import { ServiceState } from './service-state.ts';
+  ComposeServiceSecret,
+  ComposeServiceConfig,
+  ComposeDevice,
+  ComposePort,
+  ComposeDeploy,
+  ComposeDevelopment,
+  ComposeVolumeBindOptions,
+  ComposeVolumeConfig,
+  ComposeCredentialSpec,
+  ComposePullPolicy,
+  ComposeProvider,
+  ComposeGpuDevice,
+  ComposeService,
+  BlkioConfig,
+  ComposeBuild,
+} from "../../types.ts";
+import { CommandProperty } from "./properties/command.ts";
+import { DependsProperty } from "./properties/depends.ts";
+import { EnvironmentProperty } from "./properties/environment.ts";
+import { ImageProperty } from "./properties/image.ts";
+import { NameProperty } from "./properties/name.ts";
+import { ServiceNetworksBuilder } from "./properties/networks.ts";
+import { PortsProperty } from "./properties/ports.ts";
+import { composeServiceSchema, serviceSchema } from "./service-schemas.ts";
+import { ServiceState } from "./service-state.ts";
 
 export class ServiceBuilder implements ServiceHandle {
   static readonly composeSchema = composeServiceSchema;
@@ -73,6 +60,42 @@ export class ServiceBuilder implements ServiceHandle {
   private readonly exposeList: Array<string | number> = [];
   private readonly secretsList: ComposeServiceSecret[] = [];
   private readonly configsList: ComposeServiceConfig[] = [];
+  private readonly linksList: string[] = [];
+  private readonly externalLinksList: string[] = [];
+  private readonly dnsList: string[] = [];
+  private readonly dnsOptList: string[] = [];
+  private readonly dnsSearchList: string[] = [];
+  private readonly envFileList: string[] = [];
+  private readonly labelFileList: string[] = [];
+  private readonly volumesFromList: string[] = [];
+  private readonly tmpfsList: string[] = [];
+  private readonly devicesList: ComposeDevice[] = [];
+  private readonly deviceCgroupRulesList: string[] = [];
+  private readonly portsList: ComposePort[] = [];
+  private readonly capAddList: string[] = [];
+  private readonly capDropList: string[] = [];
+  private readonly securityOptList: string[] = [];
+  private readonly profilesList: string[] = [];
+  private readonly groupAddList: Array<string | number> = [];
+  private readonly sysctlsMap: Record<string, string | number> = {};
+  private readonly storageOptMap: Record<string, string> = {};
+  private readonly ulimitsMap: Record<
+    string,
+    number | { soft: number; hard: number }
+  > = {};
+  private readonly environmentMap: Record<
+    string,
+    string | number | boolean | null
+  > = {};
+  private readonly labelsMap: Record<string, string | number | boolean | null> =
+    {};
+  private readonly annotationsMap: Record<
+    string,
+    string | number | boolean | null
+  > = {};
+  private readonly extraHostsMap: Record<string, string | string[]> = {};
+  private readonly postStartList: ServiceHook[] = [];
+  private readonly preStopList: ServiceHook[] = [];
 
   get name(): string {
     return this.state.name;
@@ -130,18 +153,18 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   // Dependencies
   // ─────────────────────────────────────────────────────────────────────────
-  depends<R>(fn: (dsl: DependsDsl) => R): R {
-    const { dsl, simple, conditions } = createDependsBuilder();
-    const result = fn(dsl);
-    
-    if (simple.length > 0) {
-      this.dependsProperty.add(...simple);
-    }
-    for (const { service, condition } of conditions) {
+  depends(
+    service: ServiceHandle,
+    condition?:
+      | "service_started"
+      | "service_healthy"
+      | "service_completed_successfully",
+  ): void {
+    if (condition) {
       this.state.addDependsOn(service.name, { condition });
+    } else {
+      this.dependsProperty.add(service);
     }
-
-    return result;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -149,7 +172,10 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   networks<R>(fn: (dsl: NetworksDsl) => R): R {
     const dsl: NetworksDsl = {
-      add: <RAttachment = void>(network: NetworkHandle, attachmentFn?: (dsl: NetworkAttachmentDsl) => RAttachment) => {
+      add: <RAttachment = void>(
+        network: NetworkHandle,
+        attachmentFn?: (dsl: NetworkAttachmentDsl) => RAttachment,
+      ) => {
         if (!attachmentFn) {
           this.networksProperty.add(network);
           return undefined;
@@ -159,20 +185,38 @@ export class ServiceBuilder implements ServiceHandle {
         const aliases: string[] = [];
         const linkLocalIps: string[] = [];
         const driverOpts: Record<string, string | number> = {};
-        
+
         const attachmentDsl: NetworkAttachmentDsl = {
-          alias: (alias) => { aliases.push(alias); },
-          ipv4Address: (address) => { attachment.ipv4Address = address; },
-          ipv6Address: (address) => { attachment.ipv6Address = address; },
-          interfaceName: (name) => { attachment.interfaceName = name; },
-          linkLocalIp: (ip) => { linkLocalIps.push(ip); },
-          macAddress: (address) => { attachment.macAddress = address; },
-          driverOpt: (key, value) => { driverOpts[key] = value; },
-          priority: (value) => { attachment.priority = value; },
-          gwPriority: (value) => { attachment.gwPriority = value; },
+          alias: (alias) => {
+            aliases.push(alias);
+          },
+          ipv4Address: (address) => {
+            attachment.ipv4Address = address;
+          },
+          ipv6Address: (address) => {
+            attachment.ipv6Address = address;
+          },
+          interfaceName: (name) => {
+            attachment.interfaceName = name;
+          },
+          linkLocalIp: (ip) => {
+            linkLocalIps.push(ip);
+          },
+          macAddress: (address) => {
+            attachment.macAddress = address;
+          },
+          driverOpt: (key, value) => {
+            driverOpts[key] = value;
+          },
+          priority: (value) => {
+            attachment.priority = value;
+          },
+          gwPriority: (value) => {
+            attachment.gwPriority = value;
+          },
         };
         const attachmentResult = attachmentFn(attachmentDsl);
-        
+
         if (aliases.length > 0) {
           attachment.aliases = aliases;
         }
@@ -182,7 +226,7 @@ export class ServiceBuilder implements ServiceHandle {
         if (Object.keys(driverOpts).length > 0) {
           attachment.driverOpts = driverOpts;
         }
-        
+
         this.networksProperty.add(network, attachment);
         return attachmentResult;
       },
@@ -190,22 +234,14 @@ export class ServiceBuilder implements ServiceHandle {
     return fn(dsl);
   }
 
-  links<R>(fn: (dsl: ListDsl) => R): R {
-    const { dsl, values } = createListBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setLinks(values);
-    }
-    return result;
+  links(value: string): void {
+    this.linksList.push(value);
+    this.state.setLinks(this.linksList);
   }
 
-  externalLinks<R>(fn: (dsl: ListDsl) => R): R {
-    const { dsl, values } = createListBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setExternalLinks(values);
-    }
-    return result;
+  externalLinks(value: string): void {
+    this.externalLinksList.push(value);
+    this.state.setExternalLinks(this.externalLinksList);
   }
 
   networkMode(value: string): void {
@@ -216,52 +252,32 @@ export class ServiceBuilder implements ServiceHandle {
     this.state.setMacAddress(value);
   }
 
-  dns<R>(fn: (dsl: ListDsl) => R): R {
-    const { dsl, values } = createListBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setDns(values);
-    }
-    return result;
+  dns(value: string): void {
+    this.dnsList.push(value);
+    this.state.setDns(this.dnsList);
   }
 
-  dnsOpt<R>(fn: (dsl: ListDsl) => R): R {
-    const { dsl, values } = createListBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setDnsOpt(values);
-    }
-    return result;
+  dnsOpt(value: string): void {
+    this.dnsOptList.push(value);
+    this.state.setDnsOpt(this.dnsOptList);
   }
 
-  dnsSearch<R>(fn: (dsl: ListDsl) => R): R {
-    const { dsl, values } = createListBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setDnsSearch(values);
-    }
-    return result;
+  dnsSearch(value: string): void {
+    this.dnsSearchList.push(value);
+    this.state.setDnsSearch(this.dnsSearchList);
   }
 
-  extraHosts<R>(fn: (dsl: KeyValueDsl) => R): R {
-    const { dsl, values } = createKeyValueBuilder();
-    const result = fn(dsl);
-    if (Object.keys(values).length > 0) {
-      this.state.setExtraHosts(values);
-    }
-    return result;
+  extraHosts(host: string, address: string | string[]): void {
+    this.extraHostsMap[host] = address;
+    this.state.setExtraHosts(this.extraHostsMap);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Ports
   // ─────────────────────────────────────────────────────────────────────────
-  ports<R>(fn: (dsl: PortsDsl) => R): R {
-    const { dsl, values } = createPortsBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.portsProperty.set(values);
-    }
-    return result;
+  ports(value: ComposePort): void {
+    this.portsList.push(value);
+    this.portsProperty.set(this.portsList);
   }
 
   expose(port: number | string | Array<number | string>): void {
@@ -273,55 +289,37 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   // Environment
   // ─────────────────────────────────────────────────────────────────────────
-  environment<R>(fn: (dsl: KeyValueDsl) => R): R {
-    const { dsl, values } = createKeyValueBuilder();
-    const result = fn(dsl);
-    if (Object.keys(values).length > 0) {
-      this.environmentProperty.set(values);
-    }
-    return result;
+  environment(key: string, value: string | number | boolean | null): void {
+    this.environmentMap[key] = value;
+    this.environmentProperty.set(this.environmentMap);
   }
 
-  envFile<R>(fn: (dsl: ListDsl) => R): R {
-    const { dsl, values } = createListBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setEnvFile(values);
-    }
-    return result;
+  envFile(value: string): void {
+    this.envFileList.push(value);
+    this.state.setEnvFile(this.envFileList);
   }
 
-  labels<R>(fn: (dsl: KeyValueDsl) => R): R {
-    const { dsl, values } = createKeyValueBuilder();
-    const result = fn(dsl);
-    if (Object.keys(values).length > 0) {
-      this.state.setLabels(values);
-    }
-    return result;
+  labels(key: string, value: string | number | boolean | null): void {
+    this.labelsMap[key] = value;
+    this.state.setLabels(this.labelsMap);
   }
 
-  labelFile<R>(fn: (dsl: ListDsl) => R): R {
-    const { dsl, values } = createListBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setLabelFile(values);
-    }
-    return result;
+  labelFile(value: string): void {
+    this.labelFileList.push(value);
+    this.state.setLabelFile(this.labelFileList);
   }
 
-  annotations<R>(fn: (dsl: KeyValueDsl) => R): R {
-    const { dsl, values } = createKeyValueBuilder();
-    const result = fn(dsl);
-    if (Object.keys(values).length > 0) {
-      this.state.setAnnotations(values);
-    }
-    return result;
+  annotations(key: string, value: string | number | boolean | null): void {
+    this.annotationsMap[key] = value;
+    this.state.setAnnotations(this.annotationsMap);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Volumes
   // ─────────────────────────────────────────────────────────────────────────
-  private normalizeVolumeInput(input: ServiceVolumeInput): ComposeServiceVolume {
+  private normalizeVolumeInput(
+    input: ServiceVolumeInput,
+  ): ComposeServiceVolume {
     const config: ComposeVolumeConfig = { type: input.type };
 
     if (input.source) config.source = input.source;
@@ -345,10 +343,19 @@ export class ServiceBuilder implements ServiceHandle {
 
   volumes(volume: ServiceVolumeInput): void;
   volumes(source: string, target: string, mode?: string): void;
-  volumes(volumeOrSource: ServiceVolumeInput | string, target?: string, mode?: string): void {
-    if (typeof volumeOrSource === 'string') {
-      if (!target) throw new Error('Target is required when specifying a source string for volumes');
-      const spec = mode ? `${volumeOrSource}:${target}:${mode}` : `${volumeOrSource}:${target}`;
+  volumes(
+    volumeOrSource: ServiceVolumeInput | string,
+    target?: string,
+    mode?: string,
+  ): void {
+    if (typeof volumeOrSource === "string") {
+      if (!target)
+        throw new Error(
+          "Target is required when specifying a source string for volumes",
+        );
+      const spec = mode
+        ? `${volumeOrSource}:${target}:${mode}`
+        : `${volumeOrSource}:${target}`;
       this.volumesList.push(spec);
     } else {
       this.volumesList.push(this.normalizeVolumeInput(volumeOrSource));
@@ -356,22 +363,14 @@ export class ServiceBuilder implements ServiceHandle {
     this.state.setVolumes(this.volumesList);
   }
 
-  volumesFrom<R>(fn: (dsl: ListDsl) => R): R {
-    const { dsl, values } = createListBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setVolumesFrom(values);
-    }
-    return result;
+  volumesFrom(value: string): void {
+    this.volumesFromList.push(value);
+    this.state.setVolumesFrom(this.volumesFromList);
   }
 
-  tmpfs<R>(fn: (dsl: ListDsl) => R): R {
-    const { dsl, values } = createListBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setTmpfs(values);
-    }
-    return result;
+  tmpfs(value: string): void {
+    this.tmpfsList.push(value);
+    this.state.setTmpfs(this.tmpfsList);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -406,22 +405,14 @@ export class ServiceBuilder implements ServiceHandle {
     this.state.setStopGracePeriod(value);
   }
 
-  postStart<R>(fn: (dsl: HooksDsl) => R): R {
-    const { dsl, values } = createHooksBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setPostStart(values);
-    }
-    return result;
+  postStart(hook: ServiceHook): void {
+    this.postStartList.push(hook);
+    this.state.setPostStart(this.postStartList);
   }
 
-  preStop<R>(fn: (dsl: HooksDsl) => R): R {
-    const { dsl, values } = createHooksBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setPreStop(values);
-    }
-    return result;
+  preStop(hook: ServiceHook): void {
+    this.preStopList.push(hook);
+    this.state.setPreStop(this.preStopList);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -462,31 +453,19 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   // Security
   // ─────────────────────────────────────────────────────────────────────────
-  capAdd<R>(fn: (dsl: ListDsl) => R): R {
-    const { dsl, values } = createListBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setCapAdd(values);
-    }
-    return result;
+  capAdd(value: string): void {
+    this.capAddList.push(value);
+    this.state.setCapAdd(this.capAddList);
   }
 
-  capDrop<R>(fn: (dsl: ListDsl) => R): R {
-    const { dsl, values } = createListBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setCapDrop(values);
-    }
-    return result;
+  capDrop(value: string): void {
+    this.capDropList.push(value);
+    this.state.setCapDrop(this.capDropList);
   }
 
-  securityOpt<R>(fn: (dsl: ListDsl) => R): R {
-    const { dsl, values } = createListBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setSecurityOpt(values);
-    }
-    return result;
+  securityOpt(value: string): void {
+    this.securityOptList.push(value);
+    this.state.setSecurityOpt(this.securityOptList);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -587,34 +566,22 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   // Ulimits
   // ─────────────────────────────────────────────────────────────────────────
-  ulimits<R>(fn: (dsl: UlimitsDsl) => R): R {
-    const { dsl, values } = createUlimitsBuilder();
-    const result = fn(dsl);
-    if (Object.keys(values).length > 0) {
-      this.state.setUlimits(values as ComposeUlimits);
-    }
-    return result;
+  ulimits(name: string, soft: number, hard?: number): void {
+    this.ulimitsMap[name] = hard === undefined ? soft : { soft, hard };
+    this.state.setUlimits(this.ulimitsMap as ComposeUlimits);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Devices
   // ─────────────────────────────────────────────────────────────────────────
-  devices<R>(fn: (dsl: ListDsl) => R): R {
-    const { dsl, values } = createListBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setDevices(values);
-    }
-    return result;
+  devices(value: ComposeDevice): void {
+    this.devicesList.push(value);
+    this.state.setDevices(this.devicesList);
   }
 
-  deviceCgroupRules<R>(fn: (dsl: ListDsl) => R): R {
-    const { dsl, values } = createListBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setDeviceCgroupRules(values);
-    }
-    return result;
+  deviceCgroupRules(value: string): void {
+    this.deviceCgroupRulesList.push(value);
+    this.state.setDeviceCgroupRules(this.deviceCgroupRulesList);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -646,20 +613,16 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   // Sysctls
   // ─────────────────────────────────────────────────────────────────────────
-  sysctls<R>(fn: (dsl: KeyValueNumericDsl) => R): R {
-    const { dsl, values } = createKeyValueNumericBuilder();
-    const result = fn(dsl);
-    if (Object.keys(values).length > 0) {
-      this.state.setSysctls(values);
-    }
-    return result;
+  sysctls(key: string, value: string | number): void {
+    this.sysctlsMap[key] = value;
+    this.state.setSysctls(this.sysctlsMap);
   }
 
   cgroupParent(value: string): void {
     this.state.setCgroupParent(value);
   }
 
-  cgroup(value: 'host' | 'private'): void {
+  cgroup(value: "host" | "private"): void {
     this.state.setCgroup(value);
   }
 
@@ -670,13 +633,9 @@ export class ServiceBuilder implements ServiceHandle {
     this.state.setIsolation(value);
   }
 
-  storageOpt<R>(fn: (dsl: KeyValueDsl) => R): R {
-    const { dsl, values } = createKeyValueBuilder();
-    const result = fn(dsl);
-    if (Object.keys(values).length > 0) {
-      this.state.setStorageOpt(values);
-    }
-    return result;
+  storageOpt(key: string, value: string): void {
+    this.storageOptMap[key] = value;
+    this.state.setStorageOpt(this.storageOptMap);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -697,13 +656,9 @@ export class ServiceBuilder implements ServiceHandle {
     this.state.setPullRefreshAfter(value);
   }
 
-  profiles<R>(fn: (dsl: ListDsl) => R): R {
-    const { dsl, values } = createListBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setProfiles(values);
-    }
-    return result;
+  profiles(value: string): void {
+    this.profilesList.push(value);
+    this.state.setProfiles(this.profilesList);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -727,7 +682,7 @@ export class ServiceBuilder implements ServiceHandle {
     const { dsl, values } = createGpusBuilder();
     const result = fn(dsl);
     if (values.all) {
-      this.state.setGpus('all');
+      this.state.setGpus("all");
     } else if (values.devices.length > 0) {
       this.state.setGpus(values.devices as ComposeGpuDevice[]);
     }
@@ -737,13 +692,9 @@ export class ServiceBuilder implements ServiceHandle {
   // ─────────────────────────────────────────────────────────────────────────
   // Groups
   // ─────────────────────────────────────────────────────────────────────────
-  groupAdd<R>(fn: (dsl: GroupsDsl) => R): R {
-    const { dsl, values } = createGroupsBuilder();
-    const result = fn(dsl);
-    if (values.length > 0) {
-      this.state.setGroupAdd(values);
-    }
-    return result;
+  groupAdd(value: string | number): void {
+    this.groupAddList.push(value);
+    this.state.setGroupAdd(this.groupAddList);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -770,7 +721,7 @@ export class ServiceBuilder implements ServiceHandle {
       throw new ZodError([
         ...result.error.issues,
         {
-          code: 'custom',
+          code: "custom",
           path: [],
           message: `Snapshot: ${JSON.stringify(snapshot)}`,
         },
@@ -780,7 +731,7 @@ export class ServiceBuilder implements ServiceHandle {
 
   toComposeService(): ComposeService {
     if (!this.state.name) {
-      throw new Error('Service name must be set');
+      throw new Error("Service name must be set");
     }
 
     this.validate();

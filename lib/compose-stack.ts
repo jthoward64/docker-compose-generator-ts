@@ -1,8 +1,8 @@
-import { promises as fs } from 'fs';
-import path from 'path';
-import { stringify } from 'yaml';
+import { promises as fs } from "fs";
+import path from "path";
+import { stringify } from "yaml";
 
-import { type ComposeFile } from './types.ts';
+import { type ComposeFile } from "./types.ts";
 
 const cloneSpec = (spec: ComposeFile): ComposeFile =>
   JSON.parse(JSON.stringify(spec));
@@ -26,6 +26,6 @@ export class ComposeStack {
     const yamlContent = this.toYAML();
     const directory = path.dirname(filePath);
     await fs.mkdir(directory, { recursive: true });
-    await fs.writeFile(filePath, yamlContent, 'utf8');
+    await fs.writeFile(filePath, yamlContent, "utf8");
   }
 }

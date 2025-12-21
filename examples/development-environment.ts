@@ -8,45 +8,39 @@
  * - Mailhog for email testing
  */
 
-import { stack } from '../lib/index.ts';
+import { stack } from "../lib/index.ts";
 
 const [compose] = stack((s) => {
-  s.name('dev-environment');
+  s.name("dev-environment");
 
   // Define networks
   const [backendNet] = s.network((n) => {
-    n.name('backend');
+    n.name("backend");
   });
   const [frontendNet] = s.network((n) => {
-    n.name('frontend');
+    n.name("frontend");
   });
 
   // Define volumes
   s.volume((v) => {
-    v.name('mongo-data');
+    v.name("mongo-data");
   });
   s.volume((v) => {
-    v.name('redis-data');
+    v.name("redis-data");
   });
 
   // MongoDB
   const [mongo] = s.service((svc) => {
-    svc.name('mongo');
-    svc.image('mongo:7');
-    svc.restart('unless-stopped');
+    svc.name("mongo");
+    svc.image("mongo:7");
+    svc.restart("unless-stopped");
 
-    svc.environment((env) => {
-      env.add('MONGO_INITDB_ROOT_USERNAME', 'root');
-      env.add('MONGO_INITDB_ROOT_PASSWORD', 'example');
-    });
+    svc.environment("MONGO_INITDB_ROOT_USERNAME", "root");
+    svc.environment("MONGO_INITDB_ROOT_PASSWORD", "example");
 
-    svc.volumes((v) => {
-      v.quick('mongo-data', '/data/db');
-    });
+    svc.volumes("mongo-data", "/data/db");
 
-    svc.volumes({ type: 'volume', source: 'db-data', target: '/var/lib/postgresql/data' });
-      p.quick(27017, 27017);
-    });
+    svc.ports({ target: 27017, published: 27017 });
 
     svc.networks((n) => {
       n.add(backendNet);
@@ -55,18 +49,14 @@ const [compose] = stack((s) => {
 
   // Redis
   const [redis] = s.service((svc) => {
-    svc.name('redis');
-    svc.image('redis:7-alpine');
-    svc.restart('unless-stopped');
-    svc.command('redis-server --appendonly yes');
+    svc.name("redis");
+    svc.image("redis:7-alpine");
+    svc.restart("unless-stopped");
+    svc.command("redis-server --appendonly yes");
 
-    svc.volumes((v) => {
-      v.quick('redis-data', '/data');
-    });
+    svc.volumes("redis-data", "/data");
 
-    svc.ports((p) => {
-      p.quick(6379, 6379);
-    });
+    svc.ports({ target: 6379, published: 6379 });
 
     svc.networks((n) => {
       n.add(backendNet);
@@ -75,14 +65,12 @@ const [compose] = stack((s) => {
 
   // Mailhog (email testing)
   s.service((svc) => {
-    svc.name('mailhog');
-    svc.image('mailhog/mailhog');
-    svc.restart('unless-stopped');
+    svc.name("mailhog");
+    svc.image("mailhog/mailhog");
+    svc.restart("unless-stopped");
 
-    svc.ports((p) => {
-      p.quick(1025, 1025); // SMTP
-      p.quick(8025, 8025); // Web UI
-    });
+    svc.ports({ target: 1025, published: 1025 }); // SMTP
+    svc.ports({ target: 8025, published: 8025 }); // Web UI
 
     svc.networks((n) => {
       n.add(backendNet);
@@ -91,41 +79,33 @@ const [compose] = stack((s) => {
 
   // Node.js Application (development mode)
   s.service((svc) => {
-    svc.name('app');
-    svc.build({
-      context: '.',
-      target: 'development',
+    svc.name("app");
+    svc.build((b) => {
+      b.context(".");
+      b.target("development");
     });
-    svc.restart('unless-stopped');
+    svc.restart("unless-stopped");
 
-    svc.environment((env) => {
-      env.add('NODE_ENV', 'development');
-      env.add('MONGO_URL', 'mongodb://root:example@mongo:27017');
-      env.add('REDIS_URL', 'redis://redis:6379');
-      env.add('SMTP_HOST', 'mailhog');
-      env.add('SMTP_PORT', '1025');
-    });
+    svc.environment("NODE_ENV", "development");
+    svc.environment("MONGO_URL", "mongodb://root:example@mongo:27017");
+    svc.environment("REDIS_URL", "redis://redis:6379");
+    svc.environment("SMTP_HOST", "mailhog");
+    svc.environment("SMTP_PORT", "1025");
 
-    svc.ports((p) => {
-      p.quick(3000, 3000); // App
-      p.quick(9229, 9229); // Debug port
-    });
+    svc.ports({ target: 3000, published: 3000 }); // App
+    svc.ports({ target: 9229, published: 9229 }); // Debug port
 
     // Mount source code for hot reload
-    svc.volumes((v) => {
-      v.quick('.', '/app');
-      v.add({ type: 'volume', target: '/app/node_modules' }); // Preserve node_modules
-    });
+    svc.volumes(".", "/app");
+    svc.volumes({ type: "volume", target: "/app/node_modules" }); // Preserve node_modules
 
     svc.networks((n) => {
       n.add(backendNet);
       n.add(frontendNet);
     });
 
-    svc.depends((d) => {
-      d.add(mongo);
-      d.add(redis);
-    });
+    svc.depends(mongo);
+    svc.depends(redis);
 
     // Enable stdin for debugging
     svc.stdinOpen(true);

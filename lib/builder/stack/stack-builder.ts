@@ -1,6 +1,6 @@
-import { ComposeStack } from '../../compose-stack.ts';
-import { ServiceBuilder } from '../service/service-builder.ts';
-import { composeFileSchema } from './stack-schemas.ts';
+import { ComposeStack } from "../../compose-stack.ts";
+import { ServiceBuilder } from "../service/service-builder.ts";
+import { composeFileSchema } from "./stack-schemas.ts";
 import {
   type ComposeConfig,
   type ComposeFile,
@@ -23,9 +23,9 @@ import {
   type VolumeHandle,
   type VolumeInput,
   type VolumeName,
-} from '../../types.ts';
-import type { ServiceDsl, StackDsl } from '../../dsl/stack.ts';
-import type { ServiceFn } from '../../dsl/service.ts';
+} from "../../types.ts";
+import type { ServiceDsl, StackDsl } from "../../dsl/stack.ts";
+import type { ServiceResourceFn } from "../../dsl/service.ts";
 import type {
   NetworkResourceDsl,
   VolumeResourceDsl,
@@ -35,7 +35,7 @@ import type {
   VolumeResourceFn,
   SecretResourceFn,
   ConfigResourceFn,
-} from '../../dsl/builders.ts';
+} from "../../dsl/builders.ts";
 
 type Pruned<T> = { [K in keyof T as T[K] extends undefined ? never : K]: T[K] };
 
@@ -50,7 +50,7 @@ const pruneUndefined = <T extends object>(value: T): Pruned<T> => {
 };
 
 const toComposeIpam = (
-  input: NetworkInput['ipam'],
+  input: NetworkInput["ipam"],
 ): ComposeIpam | undefined => {
   if (!input) return undefined;
   return pruneUndefined({
@@ -89,7 +89,7 @@ export class StackBuilder {
   private addNetwork(input: NetworkInput): NetworkHandle {
     const { name } = input;
     if (!name) {
-      throw new Error('Network name must be provided');
+      throw new Error("Network name must be provided");
     }
     if (this.networksMap.has(name)) {
       throw new Error(`Network with name "${name}" already exists`);
@@ -112,7 +112,10 @@ export class StackBuilder {
     return { name } satisfies NetworkHandle;
   }
 
-  private addExternalNetwork(name: string, externalName?: string): NetworkHandle {
+  private addExternalNetwork(
+    name: string,
+    externalName?: string,
+  ): NetworkHandle {
     if (this.networksMap.has(name)) {
       throw new Error(`Network with name "${name}" already exists`);
     }
@@ -127,7 +130,7 @@ export class StackBuilder {
   private addVolume(input: VolumeInput): VolumeHandle {
     const { name } = input;
     if (!name) {
-      throw new Error('Volume name must be provided');
+      throw new Error("Volume name must be provided");
     }
     if (this.volumesMap.has(name)) {
       throw new Error(`Volume with name "${name}" already exists`);
@@ -150,7 +153,9 @@ export class StackBuilder {
       throw new Error(`Volume with name "${name}" already exists`);
     }
 
-    const volume: ComposeVolume = externalName ? { external: { name: externalName } } : { external: true };
+    const volume: ComposeVolume = externalName
+      ? { external: { name: externalName } }
+      : { external: true };
     this.volumesMap.set(name, volume);
     return { name } satisfies VolumeHandle;
   }
@@ -158,7 +163,7 @@ export class StackBuilder {
   private addSecret(input: SecretInput): SecretHandle {
     const { name } = input;
     if (!name) {
-      throw new Error('Secret name must be provided');
+      throw new Error("Secret name must be provided");
     }
     if (this.secretsMap.has(name)) {
       throw new Error(`Secret with name "${name}" already exists`);
@@ -182,7 +187,7 @@ export class StackBuilder {
   private addConfig(input: ConfigInput): ConfigHandle {
     const { name } = input;
     if (!name) {
-      throw new Error('Config name must be provided');
+      throw new Error("Config name must be provided");
     }
     if (this.configsMap.has(name)) {
       throw new Error(`Config with name "${name}" already exists`);
@@ -207,8 +212,11 @@ export class StackBuilder {
   // ─────────────────────────────────────────────────────────────────────────
 
   network<R>(fn: NetworkResourceFn<R>): [NetworkHandle, R] {
-    const state: Partial<NetworkInput> & { externalName?: string; externalFlag?: boolean } = {};
-    const ipamConfig: NonNullable<NetworkInput['ipam']>['config'] = [];
+    const state: Partial<NetworkInput> & {
+      externalName?: string;
+      externalFlag?: boolean;
+    } = {};
+    const ipamConfig: NonNullable<NetworkInput["ipam"]>["config"] = [];
     let ipamOptions: Record<string, string> | undefined;
 
     const dsl: NetworkResourceDsl = {
@@ -263,14 +271,17 @@ export class StackBuilder {
         }
       },
       labels: (value) => {
-        state.labels = { ...(state.labels as Record<string, string> | undefined), ...value };
+        state.labels = {
+          ...(state.labels as Record<string, string> | undefined),
+          ...value,
+        };
       },
     };
 
     const result = fn(dsl);
 
     if (!state.name) {
-      throw new Error('Network name must be provided');
+      throw new Error("Network name must be provided");
     }
 
     if (state.externalFlag) {
@@ -291,7 +302,10 @@ export class StackBuilder {
   }
 
   volume<R>(fn: VolumeResourceFn<R>): [VolumeHandle, R] {
-    const state: Partial<VolumeInput> & { externalName?: string; externalFlag?: boolean } = {};
+    const state: Partial<VolumeInput> & {
+      externalName?: string;
+      externalFlag?: boolean;
+    } = {};
 
     const dsl: VolumeResourceDsl = {
       name: (value) => {
@@ -317,14 +331,17 @@ export class StackBuilder {
         }
       },
       labels: (value) => {
-        state.labels = { ...(state.labels as Record<string, string> | undefined), ...value };
+        state.labels = {
+          ...(state.labels as Record<string, string> | undefined),
+          ...value,
+        };
       },
     };
 
     const result = fn(dsl);
 
     if (!state.name) {
-      throw new Error('Volume name must be provided');
+      throw new Error("Volume name must be provided");
     }
 
     if (state.externalFlag) {
@@ -337,7 +354,10 @@ export class StackBuilder {
   }
 
   secret<R>(fn: SecretResourceFn<R>): [SecretHandle, R] {
-    const state: Partial<SecretInput> & { externalName?: string; externalFlag?: boolean } = {};
+    const state: Partial<SecretInput> & {
+      externalName?: string;
+      externalFlag?: boolean;
+    } = {};
 
     const dsl: SecretResourceDsl = {
       name: (value) => {
@@ -362,7 +382,10 @@ export class StackBuilder {
         }
       },
       labels: (value) => {
-        state.labels = { ...(state.labels as Record<string, string> | undefined), ...value };
+        state.labels = {
+          ...(state.labels as Record<string, string> | undefined),
+          ...value,
+        };
       },
       driver: (value) => {
         state.driver = value;
@@ -379,11 +402,14 @@ export class StackBuilder {
     const result = fn(dsl);
 
     if (!state.name) {
-      throw new Error('Secret name must be provided');
+      throw new Error("Secret name must be provided");
     }
 
     if (state.externalFlag) {
-      const handle = this.addSecret({ name: state.name, external: state.externalName ? { name: state.externalName } : true });
+      const handle = this.addSecret({
+        name: state.name,
+        external: state.externalName ? { name: state.externalName } : true,
+      });
       return [handle, result];
     }
 
@@ -392,7 +418,10 @@ export class StackBuilder {
   }
 
   config<R>(fn: ConfigResourceFn<R>): [ConfigHandle, R] {
-    const state: Partial<ConfigInput> & { externalName?: string; externalFlag?: boolean } = {};
+    const state: Partial<ConfigInput> & {
+      externalName?: string;
+      externalFlag?: boolean;
+    } = {};
 
     const dsl: ConfigResourceDsl = {
       name: (value) => {
@@ -420,7 +449,10 @@ export class StackBuilder {
         }
       },
       labels: (value) => {
-        state.labels = { ...(state.labels as Record<string, string> | undefined), ...value };
+        state.labels = {
+          ...(state.labels as Record<string, string> | undefined),
+          ...value,
+        };
       },
       templateDriver: (value) => {
         state.templateDriver = value;
@@ -430,11 +462,14 @@ export class StackBuilder {
     const result = fn(dsl);
 
     if (!state.name) {
-      throw new Error('Config name must be provided');
+      throw new Error("Config name must be provided");
     }
 
     if (state.externalFlag) {
-      const handle = this.addConfig({ name: state.name, external: state.externalName ? { name: state.externalName } : true });
+      const handle = this.addConfig({
+        name: state.name,
+        external: state.externalName ? { name: state.externalName } : true,
+      });
       return [handle, result];
     }
 
@@ -450,13 +485,13 @@ export class StackBuilder {
     const dsl = new Proxy(serviceBuilder, {
       get(target, prop: string) {
         // Special case: 'name' in ServiceDsl sets the name, but ServiceBuilder has 'setName'
-        if (prop === 'name') {
+        if (prop === "name") {
           return (value: string) => target.setName(value);
         }
 
         // For all other properties, delegate to the corresponding method on ServiceBuilder
         const method = target[prop as keyof ServiceBuilder];
-        if (typeof method === 'function') {
+        if (typeof method === "function") {
           return method.bind(target);
         }
 
@@ -469,7 +504,9 @@ export class StackBuilder {
     const serviceSpec = serviceBuilder.toComposeService();
 
     if (this.servicesMap.has(serviceBuilder.name)) {
-      throw new Error(`Service with name "${serviceBuilder.name}" already exists`);
+      throw new Error(
+        `Service with name "${serviceBuilder.name}" already exists`,
+      );
     }
 
     this.servicesMap.set(serviceBuilder.name, serviceSpec);
@@ -483,7 +520,7 @@ export class StackBuilder {
       volume: <R>(fn: VolumeResourceFn<R>) => this.volume(fn),
       secret: <R>(fn: SecretResourceFn<R>) => this.secret(fn),
       config: <R>(fn: ConfigResourceFn<R>) => this.config(fn),
-      service: <R>(fn: ServiceFn<R>) => this.service(fn),
+      service: <R>(fn: ServiceResourceFn<R>) => this.service(fn),
     } satisfies StackDsl;
   }
 

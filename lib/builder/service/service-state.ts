@@ -23,7 +23,7 @@ import type {
   ComposeUlimits,
   DependsOnConditionInput,
   ServiceName,
-} from '../../types.ts';
+} from "../../types.ts";
 
 type Pruned<T> = { [K in keyof T as T[K] extends undefined ? never : K]: T[K] };
 
@@ -38,7 +38,7 @@ const pruneUndefined = <T extends object>(value: T): Pruned<T> => {
 };
 
 export class ServiceState {
-  private nameValue: ServiceName = '';
+  private nameValue: ServiceName = "";
 
   // Core
   private imageValue?: string;
@@ -48,7 +48,9 @@ export class ServiceState {
   private workingDirValue?: string;
 
   // Environment
-  private environmentValue?: Record<string, string | number | boolean | null> | string[];
+  private environmentValue?:
+    | Record<string, string | number | boolean | null>
+    | string[];
   private envFileValue?: ComposeEnvFile;
 
   // Networking
@@ -87,8 +89,12 @@ export class ServiceState {
   private developValue?: ComposeDevelopment;
 
   // Labels & Annotations
-  private labelsValue?: Record<string, string> | string[];
-  private annotationsValue?: Record<string, string> | string[];
+  private labelsValue?:
+    | Record<string, string | number | boolean | null>
+    | string[];
+  private annotationsValue?:
+    | Record<string, string | number | boolean | null>
+    | string[];
   private labelFileValue?: string | string[];
 
   // Secrets & Configs
@@ -151,7 +157,7 @@ export class ServiceState {
   private utsValue?: string;
 
   // Cgroup
-  private cgroupValue?: 'host' | 'private';
+  private cgroupValue?: "host" | "private";
   private cgroupParentValue?: string;
 
   // Extends & Provider
@@ -166,8 +172,8 @@ export class ServiceState {
   private useApiSocketValue?: boolean;
 
   // Lifecycle hooks
-  private postStartValue?: ComposeService['post_start'];
-  private preStopValue?: ComposeService['pre_stop'];
+  private postStartValue?: ComposeService["post_start"];
+  private preStopValue?: ComposeService["pre_stop"];
 
   get name(): ServiceName {
     return this.nameValue;
@@ -199,7 +205,9 @@ export class ServiceState {
   }
 
   // Environment setters
-  setEnvironment(value: Record<string, string | number | boolean | null> | string[]): void {
+  setEnvironment(
+    value: Record<string, string | number | boolean | null> | string[],
+  ): void {
     this.environmentValue = Array.isArray(value) ? [...value] : { ...value };
   }
 
@@ -283,15 +291,20 @@ export class ServiceState {
     if (Array.isArray(this.dependsOnValue)) {
       const newRecord: Record<ServiceName, ComposeDependsOnCondition> = {};
       for (const dep of this.dependsOnValue) {
-        newRecord[dep] = { condition: 'service_started' };
+        newRecord[dep] = { condition: "service_started" };
       }
       this.dependsOnValue = newRecord;
     }
     if (!this.dependsOnValue) {
       this.dependsOnValue = {};
     }
-    const dependsOnRecord = this.dependsOnValue as Record<ServiceName, ComposeDependsOnCondition>;
-    const condition: ComposeDependsOnCondition = { condition: config.condition };
+    const dependsOnRecord = this.dependsOnValue as Record<
+      ServiceName,
+      ComposeDependsOnCondition
+    >;
+    const condition: ComposeDependsOnCondition = {
+      condition: config.condition,
+    };
     if (config.restart !== undefined) condition.restart = config.restart;
     if (config.required !== undefined) condition.required = config.required;
     dependsOnRecord[name] = condition;
@@ -331,11 +344,15 @@ export class ServiceState {
   }
 
   // Labels
-  setLabels(value: Record<string, string> | string[]): void {
+  setLabels(
+    value: Record<string, string | number | boolean | null> | string[],
+  ): void {
     this.labelsValue = value;
   }
 
-  setAnnotations(value: Record<string, string> | string[]): void {
+  setAnnotations(
+    value: Record<string, string | number | boolean | null> | string[],
+  ): void {
     this.annotationsValue = value;
   }
 
@@ -545,7 +562,7 @@ export class ServiceState {
   }
 
   // Cgroup
-  setCgroup(value: 'host' | 'private'): void {
+  setCgroup(value: "host" | "private"): void {
     this.cgroupValue = value;
   }
 
@@ -584,11 +601,11 @@ export class ServiceState {
   }
 
   // Lifecycle hooks
-  setPostStart(value: ComposeService['post_start']): void {
+  setPostStart(value: ComposeService["post_start"]): void {
     this.postStartValue = value;
   }
 
-  setPreStop(value: ComposeService['pre_stop']): void {
+  setPreStop(value: ComposeService["pre_stop"]): void {
     this.preStopValue = value;
   }
 
@@ -691,7 +708,10 @@ export class ServiceState {
   }
 
   validationSnapshot(): ComposeService & { name: ServiceName } {
-    return { ...this.previewComposeService(), name: this.nameValue } as ComposeService & { name: ServiceName };
+    return {
+      ...this.previewComposeService(),
+      name: this.nameValue,
+    } as ComposeService & { name: ServiceName };
   }
 
   finalize(): ComposeService {

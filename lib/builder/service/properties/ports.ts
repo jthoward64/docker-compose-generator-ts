@@ -1,5 +1,5 @@
-import type { PortInput } from '../../../types.ts';
-import type { ServiceState } from '../service-state.ts';
+import type { PortInput } from "../../../types.ts";
+import type { ServiceState } from "../service-state.ts";
 
 export class PortsProperty {
   private readonly state: ServiceState;

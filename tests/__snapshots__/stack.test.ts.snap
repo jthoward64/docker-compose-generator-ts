@@ -57,3 +57,42 @@ exports[`StackBuilder and ComposeStack > supports ipam and external resources an
   },
 }
 `;
+
+exports[`StackBuilder and ComposeStack > supports ipam and external resources and matches snapshot 2`] = `
+"name: external-stack
+services:
+  only:
+    image: busybox
+networks:
+  custom-net:
+    name: custom-net
+    driver: bridge
+    ipam:
+      driver: my-ipam
+      config:
+        - subnet: 10.10.0.0/16
+          ip_range: 10.10.0.0/24
+          gateway: 10.10.0.1
+          aux_addresses:
+            host1: 10.10.0.2
+      options:
+        foo: bar
+    enable_ipv4: true
+    enable_ipv6: false
+    attachable: true
+  existing:
+    external:
+      name: real-net
+volumes:
+  ext-vol:
+    external: true
+secrets:
+  ext-secret:
+    name: ext-secret
+    external: true
+configs:
+  ext-config:
+    name: ext-config
+    external: true
+"
+`;

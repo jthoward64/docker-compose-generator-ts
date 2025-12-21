@@ -1,4 +1,4 @@
-import type { ServiceState } from '../service-state.ts';
+import type { ServiceState } from "../service-state.ts";
 
 export class ImageProperty {
   private readonly state: ServiceState;

@@ -1,21 +1,11 @@
 import type {
-  ConfigHandle,
   GpuConfig,
   NetworkHandle,
   PortInput,
-  SecretHandle,
   ServiceHandle,
   ServiceHook,
-} from '../types.ts';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Generic Builders
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * DSL for adding string items to a list
- */
-// ─────────────────────────────────────────────────────────────────────────────
+  ComposeServiceSecretConfig,
+} from "../types.ts";
 
 /**
  * DSL for adding ports
@@ -31,7 +21,11 @@ export interface PortsDsl {
   /** Add a port with full configuration */
   add: (port: PortInput) => void;
   /** Quick add: (containerPort) or (hostPort, containerPort) or (hostPort, containerPort, protocol) */
-  quick: (hostOrContainer: number, container?: number, protocol?: 'tcp' | 'udp') => void;
+  quick: (
+    hostOrContainer: number,
+    container?: number,
+    protocol?: "tcp" | "udp"
+  ) => void;
 }
 
 /**
@@ -63,7 +57,13 @@ export interface DependsDsl {
   /** Add a simple dependency */
   add: (service: ServiceHandle) => void;
   /** Add a dependency with a condition */
-  on: (service: ServiceHandle, condition: 'service_started' | 'service_healthy' | 'service_completed_successfully') => void;
+  on: (
+    service: ServiceHandle,
+    condition:
+      | "service_started"
+      | "service_healthy"
+      | "service_completed_successfully"
+  ) => void;
 }
 
 /**
@@ -86,7 +86,10 @@ export interface NetworkAttachmentDsl {
  */
 export interface NetworksDsl {
   /** Add a network with optional attachment configuration */
-  add: <R = void>(network: NetworkHandle, attachment?: (dsl: NetworkAttachmentDsl) => R) => R | undefined;
+  add: <R = void>(
+    network: NetworkHandle,
+    attachment?: (dsl: NetworkAttachmentDsl) => R
+  ) => R | undefined;
 }
 
 /**
@@ -108,19 +111,38 @@ export interface HooksDsl {
 }
 
 /**
- * DSL for adding group IDs
+ * DSL for configuring build options
  */
-export interface GroupsDsl {
-  /** Add a group by name or ID */
-  add: (group: string | number) => void;
+export interface BuildDsl {
+  context: (value: string) => void;
+  dockerfile: (value: string) => void;
+  dockerfileInline: (value: string) => void;
+  arg: (key: string, value: string) => void;
+  ssh: (key: string, value: string) => void;
+  label: (key: string, value: string) => void;
+  cacheFrom: (value: string) => void;
+  cacheTo: (value: string) => void;
+  noCache: (value: boolean | string) => void;
+  additionalContext: (name: string, path: string) => void;
+  network: (value: string) => void;
+  target: (value: string) => void;
+  shmSize: (value: number | string) => void;
+  extraHost: (host: string, address: string | string[]) => void;
+  isolation: (value: string) => void;
+  privileged: (value: boolean | string) => void;
+  secret: (value: string | ComposeServiceSecretConfig) => void;
+  tag: (value: string) => void;
+  ulimit: (name: string, soft: number | string, hard?: number | string) => void;
+  platform: (value: string) => void;
+  pull: (value: boolean | string) => void;
+  provenance: (value: string | boolean) => void;
+  sbom: (value: string | boolean) => void;
+  entitlement: (value: string) => void;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Callback helpers (function types)
 // ─────────────────────────────────────────────────────────────────────────────
-export type ListFn<R = void> = (dsl: ListDsl) => R;
-export type KeyValueFn<R = void> = (dsl: KeyValueDsl) => R;
-export type KeyValueNumericFn<R = void> = (dsl: KeyValueNumericDsl) => R;
 export type PortsFn<R = void> = (dsl: PortsDsl) => R;
 export type UlimitsFn<R = void> = (dsl: UlimitsDsl) => R;
 export type DependsFn<R = void> = (dsl: DependsDsl) => R;
@@ -128,7 +150,7 @@ export type NetworkAttachmentFn<R = void> = (dsl: NetworkAttachmentDsl) => R;
 export type NetworksFn<R = void> = (dsl: NetworksDsl) => R;
 export type GpusFn<R = void> = (dsl: GpusDsl) => R;
 export type HooksFn<R = void> = (dsl: HooksDsl) => R;
-export type GroupsFn<R = void> = (dsl: GroupsDsl) => R;
+export type BuildFn<R = void> = (dsl: BuildDsl) => R;
 
 export type NetworkResourceFn<R = void> = (dsl: NetworkResourceDsl) => R;
 export type VolumeResourceFn<R = void> = (dsl: VolumeResourceDsl) => R;
@@ -144,7 +166,12 @@ export interface NetworkResourceDsl {
   driver: (value: string) => void;
   driverOpt: (key: string, value: string | number) => void;
   ipamDriver: (value: string) => void;
-  ipamConfig: (config: { subnet?: string; ipRange?: string; gateway?: string; auxAddresses?: Record<string, string> }) => void;
+  ipamConfig: (config: {
+    subnet?: string;
+    ipRange?: string;
+    gateway?: string;
+    auxAddresses?: Record<string, string>;
+  }) => void;
   ipamOption: (key: string, value: string) => void;
   external: (externalName?: string) => void;
   internal: (value: boolean | string) => void;
@@ -191,52 +218,29 @@ export interface ConfigResourceDsl {
 // Builder implementations
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const createListBuilder = (): { dsl: ListDsl; values: string[] } => {
-  const values: string[] = [];
-  return {
-    dsl: {
-      add: (value: string) => values.push(value),
-    },
-    values,
-  };
-};
-
-export const createKeyValueBuilder = (): { dsl: KeyValueDsl; values: Record<string, string> } => {
-  const values: Record<string, string> = {};
-  return {
-    dsl: {
-      add: (key: string, value: string) => {
-        values[key] = value;
-      },
-    },
-    values,
-  };
-};
-
-export const createKeyValueNumericBuilder = (): { dsl: KeyValueNumericDsl; values: Record<string, string | number> } => {
-  const values: Record<string, string | number> = {};
-  return {
-    dsl: {
-      add: (key: string, value: string | number) => {
-        values[key] = value;
-      },
-    },
-    values,
-  };
-};
-
-export const createPortsBuilder = (): { dsl: PortsDsl; values: PortInput[] } => {
+export const createPortsBuilder = (): {
+  dsl: PortsDsl;
+  values: PortInput[];
+} => {
   const values: PortInput[] = [];
   return {
     dsl: {
       add: (port: PortInput) => values.push(port),
-      quick: (hostOrContainer: number, container?: number, protocol?: 'tcp' | 'udp') => {
+      quick: (
+        hostOrContainer: number,
+        container?: number,
+        protocol?: "tcp" | "udp"
+      ) => {
         if (container === undefined) {
           // Single arg: container port only
           values.push({ target: hostOrContainer, protocol });
         } else {
           // Two args: host:container
-          values.push({ target: container, published: hostOrContainer, protocol });
+          values.push({
+            target: container,
+            published: hostOrContainer,
+            protocol,
+          });
         }
       },
     },
@@ -246,7 +250,10 @@ export const createPortsBuilder = (): { dsl: PortsDsl; values: PortInput[] } => 
 
 // Removed in favor of direct helpers on ServiceDsl
 
-export const createUlimitsBuilder = (): { dsl: UlimitsDsl; values: Record<string, number | { soft: number; hard: number }> } => {
+export const createUlimitsBuilder = (): {
+  dsl: UlimitsDsl;
+  values: Record<string, number | { soft: number; hard: number }>;
+} => {
   const values: Record<string, number | { soft: number; hard: number }> = {};
   return {
     dsl: {
@@ -261,11 +268,21 @@ export const createUlimitsBuilder = (): { dsl: UlimitsDsl; values: Record<string
   };
 };
 
-type DependsCondition = 'service_started' | 'service_healthy' | 'service_completed_successfully';
+type DependsCondition =
+  | "service_started"
+  | "service_healthy"
+  | "service_completed_successfully";
 
-export const createDependsBuilder = (): { dsl: DependsDsl; simple: ServiceHandle[]; conditions: Array<{ service: ServiceHandle; condition: DependsCondition }> } => {
+export const createDependsBuilder = (): {
+  dsl: DependsDsl;
+  simple: ServiceHandle[];
+  conditions: Array<{ service: ServiceHandle; condition: DependsCondition }>;
+} => {
   const simple: ServiceHandle[] = [];
-  const conditions: Array<{ service: ServiceHandle; condition: DependsCondition }> = [];
+  const conditions: Array<{
+    service: ServiceHandle;
+    condition: DependsCondition;
+  }> = [];
   return {
     dsl: {
       add: (service: ServiceHandle) => simple.push(service),
@@ -278,7 +295,10 @@ export const createDependsBuilder = (): { dsl: DependsDsl; simple: ServiceHandle
   };
 };
 
-export const createGpusBuilder = (): { dsl: GpusDsl; values: { all: boolean; devices: GpuConfig[] } } => {
+export const createGpusBuilder = (): {
+  dsl: GpusDsl;
+  values: { all: boolean; devices: GpuConfig[] };
+} => {
   const result = { all: false, devices: [] as GpuConfig[] };
   return {
     dsl: {
@@ -291,21 +311,14 @@ export const createGpusBuilder = (): { dsl: GpusDsl; values: { all: boolean; dev
   };
 };
 
-export const createHooksBuilder = (): { dsl: HooksDsl; values: ServiceHook[] } => {
+export const createHooksBuilder = (): {
+  dsl: HooksDsl;
+  values: ServiceHook[];
+} => {
   const values: ServiceHook[] = [];
   return {
     dsl: {
       add: (hook: ServiceHook) => values.push(hook),
-    },
-    values,
-  };
-};
-
-export const createGroupsBuilder = (): { dsl: GroupsDsl; values: Array<string | number> } => {
-  const values: Array<string | number> = [];
-  return {
-    dsl: {
-      add: (group: string | number) => values.push(group),
     },
     values,
   };

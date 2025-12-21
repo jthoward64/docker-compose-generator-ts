@@ -1,5 +1,9 @@
-import type { ComposeServiceNetworkConfig, NetworkHandle, ServiceNetworkAttachment } from '../../../types.ts';
-import type { ServiceState } from '../service-state.ts';
+import type {
+  ComposeServiceNetworkConfig,
+  NetworkHandle,
+  ServiceNetworkAttachment,
+} from "../../../types.ts";
+import type { ServiceState } from "../service-state.ts";
 
 const toComposeNetworkAttachment = (
   attachment: ServiceNetworkAttachment,
@@ -8,12 +12,14 @@ const toComposeNetworkAttachment = (
   if (attachment.aliases) output.aliases = attachment.aliases;
   if (attachment.ipv4Address) output.ipv4_address = attachment.ipv4Address;
   if (attachment.ipv6Address) output.ipv6_address = attachment.ipv6Address;
-  if (attachment.interfaceName) output.interface_name = attachment.interfaceName;
+  if (attachment.interfaceName)
+    output.interface_name = attachment.interfaceName;
   if (attachment.linkLocalIps) output.link_local_ips = attachment.linkLocalIps;
   if (attachment.macAddress) output.mac_address = attachment.macAddress;
   if (attachment.driverOpts) output.driver_opts = attachment.driverOpts;
   if (attachment.priority !== undefined) output.priority = attachment.priority;
-  if (attachment.gwPriority !== undefined) output.gw_priority = attachment.gwPriority;
+  if (attachment.gwPriority !== undefined)
+    output.gw_priority = attachment.gwPriority;
   return output;
 };
 
