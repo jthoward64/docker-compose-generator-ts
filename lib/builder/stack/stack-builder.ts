@@ -26,7 +26,6 @@ import {
 } from "../../types.ts";
 import { pruneUndefined } from "../../utils/prune.ts";
 import type { ServiceDsl, StackDsl } from "../../dsl/stack.ts";
-import type { ServiceResourceFn } from "../../dsl/service.ts";
 import type {
   NetworkResourceDsl,
   VolumeResourceDsl,
@@ -37,6 +36,7 @@ import type {
   SecretResourceFn,
   ConfigResourceFn,
 } from "../../dsl/builders.ts";
+import { isPromise } from "node:util/types";
 
 const toComposeIpam = (
   input: NetworkInput["ipam"]
@@ -55,6 +55,20 @@ const toComposeIpam = (
     options: input.options,
   });
 };
+
+function unwrapPromiseTuple<A, B>(
+  tuple: [() => A, B]
+): B extends Promise<infer U> ? Promise<[A, U]> : [A, B] {
+  if (isPromise(tuple[1])) {
+    return tuple[1].then((resolved) => [
+      tuple[0](),
+      resolved,
+    ]) as B extends Promise<infer U> ? Promise<[A, U]> : [A, B];
+  }
+  return [tuple[0](), tuple[1]] as B extends Promise<infer U>
+    ? Promise<[A, U]>
+    : [A, B];
+}
 
 export class StackBuilder {
   static readonly schema = composeFileSchema;
@@ -200,7 +214,11 @@ export class StackBuilder {
   // Single-resource ergonomic builders
   // ─────────────────────────────────────────────────────────────────────────
 
-  network<R>(fn: NetworkResourceFn<R>): [NetworkHandle, R] {
+  network<R>(
+    fn: NetworkResourceFn<R>
+  ): R extends Promise<infer U>
+    ? Promise<[NetworkHandle, U]>
+    : [NetworkHandle, R] {
     const state: Partial<NetworkInput> & {
       externalName?: string;
       externalFlag?: boolean;
@@ -266,31 +284,36 @@ export class StackBuilder {
         };
       },
     };
-
     const result = fn(dsl);
 
-    if (!state.name) {
-      throw new Error("Network name must be provided");
-    }
+    const finalize = (): NetworkHandle => {
+      if (!state.name) {
+        throw new Error("Network name must be provided");
+      }
 
-    if (state.externalFlag) {
-      const handle = this.addExternalNetwork(state.name, state.externalName);
-      return [handle, result];
-    }
+      if (state.externalFlag) {
+        return this.addExternalNetwork(state.name, state.externalName);
+      }
 
-    if (ipamConfig.length || ipamOptions || state.ipam?.driver) {
-      state.ipam = {
-        driver: state.ipam?.driver,
-        config: ipamConfig.length ? ipamConfig : undefined,
-        options: ipamOptions,
-      };
-    }
+      if (ipamConfig.length || ipamOptions || state.ipam?.driver) {
+        state.ipam = {
+          driver: state.ipam?.driver,
+          config: ipamConfig.length ? ipamConfig : undefined,
+          options: ipamOptions,
+        };
+      }
 
-    const handle = this.addNetwork(state as NetworkInput);
-    return [handle, result];
+      return this.addNetwork(state as NetworkInput);
+    };
+
+    return unwrapPromiseTuple([finalize, result]);
   }
 
-  volume<R>(fn: VolumeResourceFn<R>): [VolumeHandle, R] {
+  volume<R>(
+    fn: VolumeResourceFn<R>
+  ): R extends Promise<infer U>
+    ? Promise<[VolumeHandle, U]>
+    : [VolumeHandle, R] {
     const state: Partial<VolumeInput> & {
       externalName?: string;
       externalFlag?: boolean;
@@ -326,23 +349,28 @@ export class StackBuilder {
         };
       },
     };
-
     const result = fn(dsl);
 
-    if (!state.name) {
-      throw new Error("Volume name must be provided");
-    }
+    const finalize = (): VolumeHandle => {
+      if (!state.name) {
+        throw new Error("Volume name must be provided");
+      }
 
-    if (state.externalFlag) {
-      const handle = this.addExternalVolume(state.name, state.externalName);
-      return [handle, result];
-    }
+      if (state.externalFlag) {
+        return this.addExternalVolume(state.name, state.externalName);
+      }
 
-    const handle = this.addVolume(state as VolumeInput);
-    return [handle, result];
+      return this.addVolume(state as VolumeInput);
+    };
+
+    return unwrapPromiseTuple([finalize, result]);
   }
 
-  secret<R>(fn: SecretResourceFn<R>): [SecretHandle, R] {
+  secret<R>(
+    fn: SecretResourceFn<R>
+  ): R extends Promise<infer U>
+    ? Promise<[SecretHandle, U]>
+    : [SecretHandle, R] {
     const state: Partial<SecretInput> & {
       externalName?: string;
       externalFlag?: boolean;
@@ -387,26 +415,31 @@ export class StackBuilder {
         state.templateDriver = value;
       },
     };
-
     const result = fn(dsl);
 
-    if (!state.name) {
-      throw new Error("Secret name must be provided");
-    }
+    const finalize = (): SecretHandle => {
+      if (!state.name) {
+        throw new Error("Secret name must be provided");
+      }
 
-    if (state.externalFlag) {
-      const handle = this.addSecret({
-        name: state.name,
-        external: state.externalName ? { name: state.externalName } : true,
-      });
-      return [handle, result];
-    }
+      if (state.externalFlag) {
+        return this.addSecret({
+          name: state.name,
+          external: state.externalName ? { name: state.externalName } : true,
+        });
+      }
 
-    const handle = this.addSecret(state as SecretInput);
-    return [handle, result];
+      return this.addSecret(state as SecretInput);
+    };
+
+    return unwrapPromiseTuple([finalize, result]);
   }
 
-  config<R>(fn: ConfigResourceFn<R>): [ConfigHandle, R] {
+  config<R>(
+    fn: ConfigResourceFn<R>
+  ): R extends Promise<infer U>
+    ? Promise<[ConfigHandle, U]>
+    : [ConfigHandle, R] {
     const state: Partial<ConfigInput> & {
       externalName?: string;
       externalFlag?: boolean;
@@ -447,26 +480,31 @@ export class StackBuilder {
         state.templateDriver = value;
       },
     };
-
     const result = fn(dsl);
 
-    if (!state.name) {
-      throw new Error("Config name must be provided");
-    }
+    const finalize = (): ConfigHandle => {
+      if (!state.name) {
+        throw new Error("Config name must be provided");
+      }
 
-    if (state.externalFlag) {
-      const handle = this.addConfig({
-        name: state.name,
-        external: state.externalName ? { name: state.externalName } : true,
-      });
-      return [handle, result];
-    }
+      if (state.externalFlag) {
+        return this.addConfig({
+          name: state.name,
+          external: state.externalName ? { name: state.externalName } : true,
+        });
+      }
 
-    const handle = this.addConfig(state as ConfigInput);
-    return [handle, result];
+      return this.addConfig(state as ConfigInput);
+    };
+
+    return unwrapPromiseTuple([finalize, result]);
   }
 
-  service<R>(builderFn: (dsl: ServiceDsl) => R): [ServiceHandle, R] {
+  service<R>(
+    builderFn: (dsl: ServiceDsl) => R
+  ): R extends Promise<infer U>
+    ? Promise<[ServiceHandle, U]>
+    : [ServiceHandle, R] {
     const serviceBuilder = new ServiceBuilder();
 
     // Use a Proxy to dynamically delegate all ServiceDsl methods to ServiceBuilder
@@ -487,29 +525,32 @@ export class StackBuilder {
         return undefined;
       },
     }) as unknown as ServiceDsl;
-
     const result = builderFn(dsl);
 
-    const serviceSpec = serviceBuilder.toComposeService();
+    const finalize = (): ServiceHandle => {
+      const serviceSpec = serviceBuilder.toComposeService();
 
-    if (this.servicesMap.has(serviceBuilder.name)) {
-      throw new Error(
-        `Service with name "${serviceBuilder.name}" already exists`
-      );
-    }
+      if (this.servicesMap.has(serviceBuilder.name)) {
+        throw new Error(
+          `Service with name "${serviceBuilder.name}" already exists`
+        );
+      }
 
-    this.servicesMap.set(serviceBuilder.name, serviceSpec);
-    return [{ name: serviceBuilder.name } satisfies ServiceHandle, result];
+      this.servicesMap.set(serviceBuilder.name, serviceSpec);
+      return { name: serviceBuilder.name } satisfies ServiceHandle;
+    };
+
+    return unwrapPromiseTuple([finalize, result]);
   }
 
   createDsl(): StackDsl {
     return {
       name: (value: string) => this.name(value),
-      network: <R>(fn: NetworkResourceFn<R>) => this.network(fn),
-      volume: <R>(fn: VolumeResourceFn<R>) => this.volume(fn),
-      secret: <R>(fn: SecretResourceFn<R>) => this.secret(fn),
-      config: <R>(fn: ConfigResourceFn<R>) => this.config(fn),
-      service: <R>(fn: ServiceResourceFn<R>) => this.service(fn),
+      network: this.network.bind(this),
+      volume: this.volume.bind(this),
+      secret: this.secret.bind(this),
+      config: this.config.bind(this),
+      service: this.service.bind(this),
     } satisfies StackDsl;
   }
 
