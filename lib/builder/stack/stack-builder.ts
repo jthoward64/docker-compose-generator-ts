@@ -24,6 +24,7 @@ import {
   type VolumeInput,
   type VolumeName,
 } from "../../types.ts";
+import { pruneUndefined } from "../../utils/prune.ts";
 import type { ServiceDsl, StackDsl } from "../../dsl/stack.ts";
 import type { ServiceResourceFn } from "../../dsl/service.ts";
 import type {
@@ -37,20 +38,8 @@ import type {
   ConfigResourceFn,
 } from "../../dsl/builders.ts";
 
-type Pruned<T> = { [K in keyof T as T[K] extends undefined ? never : K]: T[K] };
-
-const pruneUndefined = <T extends object>(value: T): Pruned<T> => {
-  const result = { ...value } as Record<string, unknown>;
-  Object.keys(result).forEach((key) => {
-    if (result[key] === undefined) {
-      delete result[key];
-    }
-  });
-  return result as Pruned<T>;
-};
-
 const toComposeIpam = (
-  input: NetworkInput["ipam"],
+  input: NetworkInput["ipam"]
 ): ComposeIpam | undefined => {
   if (!input) return undefined;
   return pruneUndefined({
@@ -61,7 +50,7 @@ const toComposeIpam = (
         ip_range: c.ipRange,
         gateway: c.gateway,
         aux_addresses: c.auxAddresses,
-      }),
+      })
     ),
     options: input.options,
   });
@@ -114,7 +103,7 @@ export class StackBuilder {
 
   private addExternalNetwork(
     name: string,
-    externalName?: string,
+    externalName?: string
   ): NetworkHandle {
     if (this.networksMap.has(name)) {
       throw new Error(`Network with name "${name}" already exists`);
@@ -505,7 +494,7 @@ export class StackBuilder {
 
     if (this.servicesMap.has(serviceBuilder.name)) {
       throw new Error(
-        `Service with name "${serviceBuilder.name}" already exists`,
+        `Service with name "${serviceBuilder.name}" already exists`
       );
     }
 

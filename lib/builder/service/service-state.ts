@@ -25,18 +25,7 @@ import type {
   ServiceName,
   ComposeRestartPolicyValue,
 } from "../../types.ts";
-
-type Pruned<T> = { [K in keyof T as T[K] extends undefined ? never : K]: T[K] };
-
-const pruneUndefined = <T extends object>(value: T): Pruned<T> => {
-  const result = { ...value } as Record<string, unknown>;
-  Object.keys(result).forEach((key) => {
-    if (result[key] === undefined) {
-      delete result[key];
-    }
-  });
-  return result as Pruned<T>;
-};
+import { pruneUndefined } from "../../utils/prune.ts";
 
 export class ServiceState {
   private nameValue: ServiceName = "";

@@ -11,7 +11,8 @@
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "build": "tsc",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "check": "tsc --noEmit && vitest run"
   },
   "type": "module",
   "author": "Joshua Tag Howard",

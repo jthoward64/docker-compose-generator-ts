@@ -2,11 +2,11 @@ import type {
   ComposeServiceNetworkConfig,
   NetworkHandle,
   ServiceNetworkAttachment,
-} from "../../../types.ts";
-import type { ServiceState } from "../service-state.ts";
+} from "../../types.ts";
+import type { ServiceState } from "./service-state.ts";
 
 const toComposeNetworkAttachment = (
-  attachment: ServiceNetworkAttachment,
+  attachment: ServiceNetworkAttachment
 ): ComposeServiceNetworkConfig => {
   const output: ComposeServiceNetworkConfig = {};
   if (attachment.aliases) output.aliases = attachment.aliases;
@@ -23,7 +23,7 @@ const toComposeNetworkAttachment = (
   return output;
 };
 
-export class ServiceNetworksBuilder {
+export class ServiceNetworks {
   private readonly state: ServiceState;
 
   constructor(state: ServiceState) {

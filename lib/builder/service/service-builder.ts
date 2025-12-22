@@ -2,155 +2,39 @@ import { ZodError } from "zod";
 
 import {
   createGpusBuilder,
-  type BuildDsl,
   type BuildFn,
   type GpusDsl,
-  type NetworkDsl,
   type NetworkFn,
 } from "../../dsl/builders.ts";
 import type {
-  ServiceHook,
+  BlkioConfig,
+  ComposeCredentialSpec,
+  ComposeDeploy,
+  ComposeDevelopment,
+  ComposeDevice,
+  ComposeGpuDevice,
+  ComposePort,
+  ComposeProvider,
+  ComposePullPolicy,
+  ComposeRestartPolicyValue,
+  ComposeService,
+  ComposeServiceConfig,
+  ComposeServiceSecret,
   ComposeServiceVolume,
   ComposeUlimits,
   HealthcheckInput,
   LoggingInput,
-  NetworkHandle,
   ServiceHandle,
-  ServiceNetworkAttachment,
   ServiceVolumeInput,
-  ComposeServiceSecret,
-  ComposeServiceConfig,
-  ComposeDevice,
-  ComposePort,
-  ComposeDeploy,
-  ComposeDevelopment,
-  ComposeVolumeBindOptions,
-  ComposeVolumeConfig,
-  ComposeCredentialSpec,
-  ComposePullPolicy,
-  ComposeProvider,
-  ComposeGpuDevice,
-  ComposeService,
-  BlkioConfig,
-  ComposeBuildConfig,
-  ComposeServiceSecretConfig,
-  ComposeRestartPolicyValue,
+  ServiceHook,
 } from "../../types.ts";
-import { CommandProperty } from "./properties/command.ts";
-import { DependsProperty } from "./properties/depends.ts";
-import { EnvironmentProperty } from "./properties/environment.ts";
-import { ImageProperty } from "./properties/image.ts";
-import { NameProperty } from "./properties/name.ts";
-import { ServiceNetworksBuilder } from "./properties/networks.ts";
-import { PortsProperty } from "./properties/ports.ts";
 import { composeServiceSchema, serviceSchema } from "./service-schemas.ts";
 import { ServiceState } from "./service-state.ts";
-
-const createBuildBuilder = () => {
-  const build: ComposeBuildConfig = {};
-
-  const ensureRecord = (key: keyof ComposeBuildConfig) => {
-    const current = build[key];
-    if (!current || Array.isArray(current)) {
-      (build as Record<string, unknown>)[key as string] = {};
-    }
-    return (build as Record<string, unknown>)[key as string] as Record<
-      string,
-      any
-    >;
-  };
-
-  const ensureArray = <T>(key: keyof ComposeBuildConfig) => {
-    const current = build[key];
-    if (!Array.isArray(current)) {
-      (build as Record<string, unknown>)[key as string] = [];
-    }
-    return (build as Record<string, unknown>)[key as string] as T[];
-  };
-
-  const dsl: BuildDsl = {
-    context: (value) => {
-      build.context = value;
-    },
-    dockerfile: (value) => {
-      build.dockerfile = value;
-    },
-    dockerfileInline: (value) => {
-      build.dockerfile_inline = value;
-    },
-    arg: (key, value) => {
-      const args = ensureRecord("args");
-      args[key] = value;
-    },
-    ssh: (key, value) => {
-      const ssh = ensureRecord("ssh");
-      ssh[key] = value;
-    },
-    label: (key, value) => {
-      const labels = ensureRecord("labels");
-      labels[key] = value;
-    },
-    cacheFrom: (value) => {
-      ensureArray<string>("cache_from").push(value);
-    },
-    cacheTo: (value) => {
-      ensureArray<string>("cache_to").push(value);
-    },
-    noCache: (value) => {
-      build.no_cache = value;
-    },
-    additionalContext: (name, path) => {
-      const contexts = ensureRecord("additional_contexts");
-      contexts[name] = path;
-    },
-    network: (value) => {
-      build.network = value;
-    },
-    target: (value) => {
-      build.target = value;
-    },
-    shmSize: (value) => {
-      build.shm_size = value;
-    },
-    extraHost: (host, address) => {
-      const hosts = ensureRecord("extra_hosts");
-      hosts[host] = address;
-    },
-    isolation: (value) => {
-      build.isolation = value;
-    },
-    privileged: (value) => {
-      build.privileged = value;
-    },
-    secret: (value) => {
-      ensureArray<string | ComposeServiceSecretConfig>("secrets").push(value);
-    },
-    tag: (value) => {
-      ensureArray<string>("tags").push(value);
-    },
-    ulimit: (name, soft, hard) => {
-      const ulimits = ensureRecord("ulimits");
-      ulimits[name] = { soft, hard: hard ?? soft };
-    },
-    platform: (value) => {
-      ensureArray<string>("platforms").push(value);
-    },
-    pull: (value) => {
-      build.pull = value;
-    },
-    provenance: (value) => {
-      build.provenance = value;
-    },
-    sbom: (value) => {
-      build.sbom = value;
-    },
-    entitlement: (value) => {
-      ensureArray<string>("entitlements").push(value);
-    },
-  };
-
-  return { dsl, value: build };
-};
+import { createBuildBuilder } from "./build-dsl.ts";
+import { createListCollector, createMapCollector } from "./collectors.ts";
+import { ServiceNetworks } from "./network-attachments.ts";
+import { runNetworkDsl } from "./network-dsl.ts";
+import { normalizeVolumeInput } from "./volume-normalizer.ts";
 
 export class ServiceBuilder implements ServiceHandle {
   static readonly composeSchema = composeServiceSchema;
@@ -159,53 +43,99 @@ export class ServiceBuilder implements ServiceHandle {
   readonly schema = ServiceBuilder.schema;
 
   private readonly state = new ServiceState();
-  private readonly nameProperty = new NameProperty(this.state);
-  private readonly imageProperty = new ImageProperty(this.state);
-  private readonly commandProperty = new CommandProperty(this.state);
-  private readonly environmentProperty = new EnvironmentProperty(this.state);
-  private readonly portsProperty = new PortsProperty(this.state);
-  private readonly dependsProperty = new DependsProperty(this.state);
-  private readonly networksProperty = new ServiceNetworksBuilder(this.state);
-  private readonly volumesList: ComposeServiceVolume[] = [];
-  private readonly exposeList: Array<string | number> = [];
-  private readonly secretsList: ComposeServiceSecret[] = [];
-  private readonly configsList: ComposeServiceConfig[] = [];
-  private readonly linksList: string[] = [];
-  private readonly externalLinksList: string[] = [];
-  private readonly dnsList: string[] = [];
-  private readonly dnsOptList: string[] = [];
-  private readonly dnsSearchList: string[] = [];
-  private readonly envFileList: string[] = [];
-  private readonly labelFileList: string[] = [];
-  private readonly volumesFromList: string[] = [];
-  private readonly tmpfsList: string[] = [];
-  private readonly devicesList: ComposeDevice[] = [];
-  private readonly deviceCgroupRulesList: string[] = [];
-  private readonly portsList: ComposePort[] = [];
-  private readonly capAddList: string[] = [];
-  private readonly capDropList: string[] = [];
-  private readonly securityOptList: string[] = [];
-  private readonly profilesList: string[] = [];
-  private readonly groupAddList: Array<string | number> = [];
-  private readonly sysctlsMap: Record<string, string | number> = {};
-  private readonly storageOptMap: Record<string, string> = {};
-  private readonly ulimitsMap: Record<
-    string,
+  private readonly networks = new ServiceNetworks(this.state);
+
+  private readonly volumesCollector = createListCollector<ComposeServiceVolume>(
+    (values) => this.state.setVolumes(values)
+  );
+  private readonly exposeCollector = createListCollector<string | number>(
+    (values) => this.state.setExpose(values)
+  );
+  private readonly secretsCollector = createListCollector<ComposeServiceSecret>(
+    (values) => this.state.setSecrets(values)
+  );
+  private readonly configsCollector = createListCollector<ComposeServiceConfig>(
+    (values) => this.state.setConfigs(values)
+  );
+  private readonly linksCollector = createListCollector<string>((values) =>
+    this.state.setLinks(values)
+  );
+  private readonly externalLinksCollector = createListCollector<string>(
+    (values) => this.state.setExternalLinks(values)
+  );
+  private readonly dnsCollector = createListCollector<string>((values) =>
+    this.state.setDns(values)
+  );
+  private readonly dnsOptCollector = createListCollector<string>((values) =>
+    this.state.setDnsOpt(values)
+  );
+  private readonly dnsSearchCollector = createListCollector<string>((values) =>
+    this.state.setDnsSearch(values)
+  );
+  private readonly envFileCollector = createListCollector<string>((values) =>
+    this.state.setEnvFile(values)
+  );
+  private readonly labelFileCollector = createListCollector<string>((values) =>
+    this.state.setLabelFile(values)
+  );
+  private readonly volumesFromCollector = createListCollector<string>(
+    (values) => this.state.setVolumesFrom(values)
+  );
+  private readonly tmpfsCollector = createListCollector<string>((values) =>
+    this.state.setTmpfs(values)
+  );
+  private readonly devicesCollector = createListCollector<ComposeDevice>(
+    (values) => this.state.setDevices(values)
+  );
+  private readonly deviceCgroupRulesCollector = createListCollector<string>(
+    (values) => this.state.setDeviceCgroupRules(values)
+  );
+  private readonly portsCollector = createListCollector<ComposePort>((values) =>
+    this.state.setPorts(values)
+  );
+  private readonly capAddCollector = createListCollector<string>((values) =>
+    this.state.setCapAdd(values)
+  );
+  private readonly capDropCollector = createListCollector<string>((values) =>
+    this.state.setCapDrop(values)
+  );
+  private readonly securityOptCollector = createListCollector<string>(
+    (values) => this.state.setSecurityOpt(values)
+  );
+  private readonly profileCollector = createListCollector<string>((values) =>
+    this.state.setProfiles(values)
+  );
+  private readonly groupAddCollector = createListCollector<string | number>(
+    (values) => this.state.setGroupAdd(values)
+  );
+  private readonly postStartCollector = createListCollector<ServiceHook>(
+    (values) => this.state.setPostStart(values)
+  );
+  private readonly preStopCollector = createListCollector<ServiceHook>(
+    (values) => this.state.setPreStop(values)
+  );
+
+  private readonly environmentMap = createMapCollector<
+    string | number | boolean | null
+  >((values) => this.state.setEnvironment(values));
+  private readonly labelsMap = createMapCollector<
+    string | number | boolean | null
+  >((values) => this.state.setLabels(values));
+  private readonly annotationsMap = createMapCollector<
+    string | number | boolean | null
+  >((values) => this.state.setAnnotations(values));
+  private readonly extraHostsMap = createMapCollector<string | string[]>(
+    (values) => this.state.setExtraHosts(values)
+  );
+  private readonly storageOptMap = createMapCollector<string>((values) =>
+    this.state.setStorageOpt(values)
+  );
+  private readonly ulimitsMap = createMapCollector<
     number | { soft: number; hard: number }
-  > = {};
-  private readonly environmentMap: Record<
-    string,
-    string | number | boolean | null
-  > = {};
-  private readonly labelsMap: Record<string, string | number | boolean | null> =
-    {};
-  private readonly annotationsMap: Record<
-    string,
-    string | number | boolean | null
-  > = {};
-  private readonly extraHostsMap: Record<string, string | string[]> = {};
-  private readonly postStartList: ServiceHook[] = [];
-  private readonly preStopList: ServiceHook[] = [];
+  >((values) => this.state.setUlimits(values as ComposeUlimits));
+  private readonly sysctlsMap = createMapCollector<string | number>((values) =>
+    this.state.setSysctls(values)
+  );
 
   get name(): string {
     return this.state.name;
@@ -215,11 +145,11 @@ export class ServiceBuilder implements ServiceHandle {
   // Identity
   // ─────────────────────────────────────────────────────────────────────────
   setName(value: string): void {
-    this.nameProperty.set(value);
+    this.state.setName(value);
   }
 
   image(value: string): void {
-    this.imageProperty.set(value);
+    this.state.setImage(value);
   }
 
   containerName(value: string): void {
@@ -238,7 +168,7 @@ export class ServiceBuilder implements ServiceHandle {
   // Execution
   // ─────────────────────────────────────────────────────────────────────────
   command(value: string | string[]): void {
-    this.commandProperty.set(value);
+    this.state.setCommand(value);
   }
 
   entrypoint(value: string | string[]): void {
@@ -276,7 +206,7 @@ export class ServiceBuilder implements ServiceHandle {
     if (condition) {
       this.state.addDependsOn(service.name, { condition });
     } else {
-      this.dependsProperty.add(service);
+      this.state.addDependency(service.name);
     }
   }
 
@@ -284,89 +214,17 @@ export class ServiceBuilder implements ServiceHandle {
   // Networks
   // ─────────────────────────────────────────────────────────────────────────
   network<R>(fn: NetworkFn<R>): R {
-    let currentNetwork: NetworkHandle | null = null;
-    let currentAttachment: ServiceNetworkAttachment | null = null;
-
-    const flush = () => {
-      if (!currentNetwork) return;
-      const attachmentToSave =
-        currentAttachment && Object.keys(currentAttachment).length > 0
-          ? currentAttachment
-          : undefined;
-      this.networksProperty.add(currentNetwork, attachmentToSave);
-      currentNetwork = null;
-      currentAttachment = null;
-    };
-
-    const ensureAttachment = (): ServiceNetworkAttachment => {
-      if (!currentNetwork) {
-        throw new Error("Call handle(network) before configuring it");
-      }
-      if (!currentAttachment) {
-        currentAttachment = {};
-      }
-      return currentAttachment;
-    };
-
-    const dsl: NetworkDsl = {
-      handle: (network) => {
-        flush();
-        currentNetwork = network;
-      },
-      alias: (alias) => {
-        const attachment = ensureAttachment();
-        if (!attachment.aliases) attachment.aliases = [];
-        attachment.aliases.push(alias);
-      },
-      ipv4Address: (address) => {
-        const attachment = ensureAttachment();
-        attachment.ipv4Address = address;
-      },
-      ipv6Address: (address) => {
-        const attachment = ensureAttachment();
-        attachment.ipv6Address = address;
-      },
-      interfaceName: (name) => {
-        const attachment = ensureAttachment();
-        attachment.interfaceName = name;
-      },
-      linkLocalIp: (ip) => {
-        const attachment = ensureAttachment();
-        if (!attachment.linkLocalIps) attachment.linkLocalIps = [];
-        attachment.linkLocalIps.push(ip);
-      },
-      macAddress: (address) => {
-        const attachment = ensureAttachment();
-        attachment.macAddress = address;
-      },
-      driverOpt: (key, value) => {
-        const attachment = ensureAttachment();
-        if (!attachment.driverOpts) attachment.driverOpts = {};
-        attachment.driverOpts[key] = value;
-      },
-      priority: (value) => {
-        const attachment = ensureAttachment();
-        attachment.priority = value;
-      },
-      gwPriority: (value) => {
-        const attachment = ensureAttachment();
-        attachment.gwPriority = value;
-      },
-    };
-
-    const result = fn(dsl);
-    flush();
-    return result;
+    return runNetworkDsl(fn, (network, attachment) =>
+      this.networks.add(network, attachment)
+    );
   }
 
   links(value: string): void {
-    this.linksList.push(value);
-    this.state.setLinks(this.linksList);
+    this.linksCollector.add(value);
   }
 
   externalLinks(value: string): void {
-    this.externalLinksList.push(value);
-    this.state.setExternalLinks(this.externalLinksList);
+    this.externalLinksCollector.add(value);
   }
 
   networkMode(value: string): void {
@@ -378,23 +236,19 @@ export class ServiceBuilder implements ServiceHandle {
   }
 
   dns(value: string): void {
-    this.dnsList.push(value);
-    this.state.setDns(this.dnsList);
+    this.dnsCollector.add(value);
   }
 
   dnsOpt(value: string): void {
-    this.dnsOptList.push(value);
-    this.state.setDnsOpt(this.dnsOptList);
+    this.dnsOptCollector.add(value);
   }
 
   dnsSearch(value: string): void {
-    this.dnsSearchList.push(value);
-    this.state.setDnsSearch(this.dnsSearchList);
+    this.dnsSearchCollector.add(value);
   }
 
   extraHosts(host: string, address: string | string[]): void {
-    this.extraHostsMap[host] = address;
-    this.state.setExtraHosts(this.extraHostsMap);
+    this.extraHostsMap.set(host, address);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -420,71 +274,40 @@ export class ServiceBuilder implements ServiceHandle {
           }
         : valueOrSource;
 
-    this.portsList.push(entry);
-    this.portsProperty.set(this.portsList);
+    this.portsCollector.add(entry);
   }
 
   expose(port: number | string | Array<number | string>): void {
     const entries = Array.isArray(port) ? port : [port];
-    this.exposeList.push(...entries);
-    this.state.setExpose(this.exposeList);
+    this.exposeCollector.addMany(entries);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Environment
   // ─────────────────────────────────────────────────────────────────────────
   environment(key: string, value: string | number | boolean | null): void {
-    this.environmentMap[key] = value;
-    this.environmentProperty.set(this.environmentMap);
+    this.environmentMap.set(key, value);
   }
 
   envFile(value: string): void {
-    this.envFileList.push(value);
-    this.state.setEnvFile(this.envFileList);
+    this.envFileCollector.add(value);
   }
 
   labels(key: string, value: string | number | boolean | null): void {
-    this.labelsMap[key] = value;
-    this.state.setLabels(this.labelsMap);
+    this.labelsMap.set(key, value);
   }
 
   labelFile(value: string): void {
-    this.labelFileList.push(value);
-    this.state.setLabelFile(this.labelFileList);
+    this.labelFileCollector.add(value);
   }
 
   annotations(key: string, value: string | number | boolean | null): void {
-    this.annotationsMap[key] = value;
-    this.state.setAnnotations(this.annotationsMap);
+    this.annotationsMap.set(key, value);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Volumes
   // ─────────────────────────────────────────────────────────────────────────
-  private normalizeVolumeInput(
-    input: ServiceVolumeInput
-  ): ComposeServiceVolume {
-    const config: ComposeVolumeConfig = { type: input.type };
-
-    if (input.source) config.source = input.source;
-    if (input.target) config.target = input.target;
-    if (input.consistency) config.consistency = input.consistency;
-    if (input.readOnly !== undefined) config.read_only = input.readOnly;
-
-    if (input.bind) {
-      const { createHostPath, ...rest } = input.bind;
-      const bind: ComposeVolumeBindOptions = { ...rest };
-      if (createHostPath !== undefined) bind.create_host_path = createHostPath;
-      config.bind = bind;
-    }
-
-    if (input.volume) config.volume = { ...input.volume };
-    if (input.tmpfs) config.tmpfs = { ...input.tmpfs };
-    if (input.image) config.image = { ...input.image };
-
-    return config;
-  }
-
   volumes(volume: ServiceVolumeInput): void;
   volumes(source: string, target: string, mode?: string): void;
   volumes(
@@ -493,28 +316,26 @@ export class ServiceBuilder implements ServiceHandle {
     mode?: string
   ): void {
     if (typeof volumeOrSource === "string") {
-      if (!target)
+      if (!target) {
         throw new Error(
           "Target is required when specifying a source string for volumes"
         );
+      }
       const spec = mode
         ? `${volumeOrSource}:${target}:${mode}`
         : `${volumeOrSource}:${target}`;
-      this.volumesList.push(spec);
+      this.volumesCollector.add(spec);
     } else {
-      this.volumesList.push(this.normalizeVolumeInput(volumeOrSource));
+      this.volumesCollector.add(normalizeVolumeInput(volumeOrSource));
     }
-    this.state.setVolumes(this.volumesList);
   }
 
   volumesFrom(value: string): void {
-    this.volumesFromList.push(value);
-    this.state.setVolumesFrom(this.volumesFromList);
+    this.volumesFromCollector.add(value);
   }
 
   tmpfs(value: string): void {
-    this.tmpfsList.push(value);
-    this.state.setTmpfs(this.tmpfsList);
+    this.tmpfsCollector.add(value);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -531,8 +352,7 @@ export class ServiceBuilder implements ServiceHandle {
     }
   ): void {
     if (!options) {
-      this.secretsList.push(secret.name);
-      this.state.setSecrets(this.secretsList);
+      this.secretsCollector.add(secret.name);
       return;
     }
 
@@ -545,8 +365,7 @@ export class ServiceBuilder implements ServiceHandle {
       gid: options.gid,
       mode: options.mode,
     };
-    this.secretsList.push(entry);
-    this.state.setSecrets(this.secretsList);
+    this.secretsCollector.add(entry);
   }
 
   config(
@@ -560,8 +379,7 @@ export class ServiceBuilder implements ServiceHandle {
     }
   ): void {
     if (!options) {
-      this.configsList.push(config.name);
-      this.state.setConfigs(this.configsList);
+      this.configsCollector.add(config.name);
       return;
     }
 
@@ -574,8 +392,7 @@ export class ServiceBuilder implements ServiceHandle {
       gid: options.gid,
       mode: options.mode,
     };
-    this.configsList.push(entry);
-    this.state.setConfigs(this.configsList);
+    this.configsCollector.add(entry);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -598,13 +415,11 @@ export class ServiceBuilder implements ServiceHandle {
   }
 
   postStart(hook: ServiceHook): void {
-    this.postStartList.push(hook);
-    this.state.setPostStart(this.postStartList);
+    this.postStartCollector.add(hook);
   }
 
   preStop(hook: ServiceHook): void {
-    this.preStopList.push(hook);
-    this.state.setPreStop(this.preStopList);
+    this.preStopCollector.add(hook);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -646,18 +461,15 @@ export class ServiceBuilder implements ServiceHandle {
   // Security
   // ─────────────────────────────────────────────────────────────────────────
   capAdd(value: string): void {
-    this.capAddList.push(value);
-    this.state.setCapAdd(this.capAddList);
+    this.capAddCollector.add(value);
   }
 
   capDrop(value: string): void {
-    this.capDropList.push(value);
-    this.state.setCapDrop(this.capDropList);
+    this.capDropCollector.add(value);
   }
 
   securityOpt(value: string): void {
-    this.securityOptList.push(value);
-    this.state.setSecurityOpt(this.securityOptList);
+    this.securityOptCollector.add(value);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -759,21 +571,18 @@ export class ServiceBuilder implements ServiceHandle {
   // Ulimits
   // ─────────────────────────────────────────────────────────────────────────
   ulimits(name: string, soft: number, hard?: number): void {
-    this.ulimitsMap[name] = hard === undefined ? soft : { soft, hard };
-    this.state.setUlimits(this.ulimitsMap as ComposeUlimits);
+    this.ulimitsMap.set(name, hard === undefined ? soft : { soft, hard });
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Devices
   // ─────────────────────────────────────────────────────────────────────────
   devices(value: ComposeDevice): void {
-    this.devicesList.push(value);
-    this.state.setDevices(this.devicesList);
+    this.devicesCollector.add(value);
   }
 
   deviceCgroupRules(value: string): void {
-    this.deviceCgroupRulesList.push(value);
-    this.state.setDeviceCgroupRules(this.deviceCgroupRulesList);
+    this.deviceCgroupRulesCollector.add(value);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -806,8 +615,7 @@ export class ServiceBuilder implements ServiceHandle {
   // Sysctls
   // ─────────────────────────────────────────────────────────────────────────
   sysctls(key: string, value: string | number): void {
-    this.sysctlsMap[key] = value;
-    this.state.setSysctls(this.sysctlsMap);
+    this.sysctlsMap.set(key, value);
   }
 
   cgroupParent(value: string): void {
@@ -826,8 +634,7 @@ export class ServiceBuilder implements ServiceHandle {
   }
 
   storageOpt(key: string, value: string): void {
-    this.storageOptMap[key] = value;
-    this.state.setStorageOpt(this.storageOptMap);
+    this.storageOptMap.set(key, value);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -849,8 +656,7 @@ export class ServiceBuilder implements ServiceHandle {
   }
 
   profiles(value: string): void {
-    this.profilesList.push(value);
-    this.state.setProfiles(this.profilesList);
+    this.profileCollector.add(value);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -885,8 +691,7 @@ export class ServiceBuilder implements ServiceHandle {
   // Groups
   // ─────────────────────────────────────────────────────────────────────────
   groupAdd(value: string | number): void {
-    this.groupAddList.push(value);
-    this.state.setGroupAdd(this.groupAddList);
+    this.groupAddCollector.add(value);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
