@@ -118,8 +118,8 @@ export interface ServiceDsl {
   // ─────────────────────────────────────────────────────────────────────────
   // Secrets & Configs
   // ─────────────────────────────────────────────────────────────────────────
-  secret: (secret: SecretHandle, options?: SecretMountOptions) => void;
-  config: (config: ConfigHandle, options?: ConfigMountOptions) => void;
+  secret: (secret: SecretHandle, options?: SecretMountOptions) => string;
+  config: (config: ConfigHandle, options?: ConfigMountOptions) => string;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Health & Lifecycle

@@ -59,6 +59,8 @@ describe("StackBuilder and ComposeStack", () => {
           interval: "10s",
           timeout: "5s",
           retries: 3,
+          startPeriod: "20s",
+          startInterval: "3s",
         });
         svc.environment("NODE_ENV", "production");
         svc.environment("DEBUG", "false");
@@ -122,6 +124,8 @@ describe("StackBuilder and ComposeStack", () => {
     expect(api?.environment).toEqual({ NODE_ENV: "production" });
 
     expect(dbService?.healthcheck?.interval).toBe("10s");
+    expect(dbService?.healthcheck?.start_period).toBe("20s");
+    expect(dbService?.healthcheck?.start_interval).toBe("3s");
     expect(dbService?.volumes?.[0]).toBe("data:/var/lib/postgresql/data");
 
     const yaml = compose.toYAML();

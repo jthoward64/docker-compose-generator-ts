@@ -22,6 +22,7 @@ import type {
   ComposeServiceVolume,
   ComposeUlimits,
   DependsOnConditionInput,
+  HealthcheckInput,
   ServiceName,
   ComposeRestartPolicyValue,
 } from "../../types.ts";
@@ -313,9 +314,37 @@ export class ServiceState {
     this.tmpfsValue = value;
   }
 
+  private normalizeHealthcheck(
+    value: ComposeHealthcheck | HealthcheckInput
+  ): ComposeHealthcheck {
+    const {
+      startPeriod,
+      startInterval,
+      start_period,
+      start_interval,
+      ...rest
+    } = value as ComposeHealthcheck & HealthcheckInput;
+
+    const normalized = { ...rest } as ComposeHealthcheck;
+
+    if (startPeriod !== undefined) {
+      normalized.start_period = startPeriod;
+    } else if (start_period !== undefined) {
+      normalized.start_period = start_period;
+    }
+
+    if (startInterval !== undefined) {
+      normalized.start_interval = startInterval;
+    } else if (start_interval !== undefined) {
+      normalized.start_interval = start_interval;
+    }
+
+    return normalized;
+  }
+
   // Health
-  setHealthcheck(value: ComposeHealthcheck): void {
-    this.healthcheckValue = value;
+  setHealthcheck(value: ComposeHealthcheck | HealthcheckInput): void {
+    this.healthcheckValue = this.normalizeHealthcheck(value);
   }
 
   // Logging

@@ -350,10 +350,10 @@ export class ServiceBuilder implements ServiceHandle {
       gid?: string;
       mode?: number | string;
     }
-  ): void {
+  ): string {
     if (!options) {
       this.secretsCollector.add(secret.name);
-      return;
+      return `/run/secrets/${secret.name}`;
     }
 
     const source = options.source ?? secret.name;
@@ -366,6 +366,7 @@ export class ServiceBuilder implements ServiceHandle {
       mode: options.mode,
     };
     this.secretsCollector.add(entry);
+    return `/run/secrets/${target}`;
   }
 
   config(
@@ -377,10 +378,10 @@ export class ServiceBuilder implements ServiceHandle {
       gid?: string;
       mode?: number | string;
     }
-  ): void {
+  ): string {
     if (!options) {
       this.configsCollector.add(config.name);
-      return;
+      return `/${config.name}`;
     }
 
     const source = options.source ?? config.name;
@@ -393,6 +394,7 @@ export class ServiceBuilder implements ServiceHandle {
       mode: options.mode,
     };
     this.configsCollector.add(entry);
+    return target;
   }
 
   // ─────────────────────────────────────────────────────────────────────────

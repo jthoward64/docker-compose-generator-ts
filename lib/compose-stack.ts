@@ -28,4 +28,8 @@ export class ComposeStack {
     await fs.mkdir(directory, { recursive: true });
     await fs.writeFile(filePath, yamlContent, "utf8");
   }
+
+  get name(): string | undefined {
+    return this.spec.name;
+  }
 }
